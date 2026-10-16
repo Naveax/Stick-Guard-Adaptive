@@ -29,5 +29,6 @@ jobs:
           node --check paired-study.cjs
           node --check public/app.js
           node --check public/idle-quality.js
+          node --check public/neutral-preview.js
       - name: Run tests without external services
-        run: node --test test.cjs paired-study.test.cjs telemetry.test.cjs idle-quality.test.cjs
+        run: node --test test.cjs paired-study.test.cjs telemetry.test.cjs idle-quality.test.cjs neutral-preview.test.cjs
