@@ -12,7 +12,7 @@
  ];
  const state={
   kind:null,selected:null,axisKey:null,axes:[0,1,2,3],mappingMode:'standard',
-  quick:null,quickSamples:[],preview:null,full:false,fullCancelled:false,fullPhase:-1,
+  quick:null,quickSamples:[],preview:null,neutral:null,neutralCandidate:null,full:false,fullCancelled:false,fullPhase:-1,
   fullStarted:0,phaseStarted:0,fullResolver:null,fullLast:-1,fullSamples:[],
   fullDevice:null,fullAxesCount:0,fullButtonsCount:0,fullDeadzone:8,
   data:null,surveyMode:'pending',uploaded:false,restSample:null,restSeparate:null
@@ -51,7 +51,7 @@
    if(i>=2&&capacity(g)===2)select.add(new Option('Sağ analog yok','-1'));
    if(!g)select.add(new Option('Kol bekleniyor','-1'));
    select.value=String(state.axes[i]);
-   select.disabled=!g||(i>=2&&capacity(g)===2)||state.full||!!state.quick;
+   select.disabled=!g||(i>=2&&capacity(g)===2)||state.full||!!state.quick||!!state.neutral;
   }
   showText('mappingStatus',capacity(g)===2?
    'Bu kolda tarayıcı yalnız 2 eksen gösteriyor; sağ analog ölçülemiyor.':
@@ -61,7 +61,7 @@
    'En az iki analog ekseni olan bir kontrolcü gerekli.');
  }
  function refresh(){
-  if(state.full||state.quick)return;
+  if(state.full||state.quick||state.neutral)return;
   const current=state.selected,select=$('device'),list=pads();
   select.replaceChildren();
   if(list.length===0){
@@ -200,8 +200,8 @@
  }
  function previewBegin(){
   if(state.preview)return;
-  if(state.full||state.quick){
-   showText('previewMessage','Önce devam eden ölçümü tamamla veya durdur.');
+  if(state.full||state.quick||state.neutral){
+   showText('previewMessage','Önce devam eden ölçümü veya kalibrasyonu tamamla ya da durdur.');
    return;
   }
   const v=currentValues();
@@ -223,8 +223,119 @@
   showText('previewTimer','20 sn');
   showText('previewMessage','İlk 5 saniye iki analogu da bırak. Sonra küçük ve tam hareketler yap; iki renkli noktayı karşılaştır.');
  }
+ function calibFinish(message, keepCandidate=false){
+  state.neutral=null;
+  if(!keepCandidate)state.neutralCandidate=null;
+  $('calibBtn').disabled=false;
+  $('calibBtn').textContent='1. nötr ölçümünü başlat (5 sn)';
+  $('calibCancelBtn').classList.add('hidden');
+  $('measureBtn').disabled=false;
+  $('fullTestBtn').disabled=false;
+  $('previewBtn').disabled=false;
+  $('device').disabled=false;
+  AXIS_IDS.forEach((id,i)=>$(id).disabled=!chosen()||(i>=2&&capacity(chosen())===2));
+  $('deadzone').disabled=state.uploaded;
+  showText('calibTimer','Hazır');
+  showText('calibMessage',message);
+ }
+ function calibBegin(){
+  const n=state.neutral;
+  if(n){
+   if(n.stage!=='move'||!n.moved[0]||(n.count===4&&!n.moved[1]))return;
+   n.stage='second';n.start=performance.now();n.last=-1;n.samples=[];
+   $('calibBtn').disabled=true;
+   showText('calibTimer','5 sn');
+   showText('calibMessage','İkinci nötr ölçüm başladı. İki analogu da 5 saniye tamamen bırak.');
+   return;
+  }
+  if(state.full||state.quick||state.preview){
+   showText('calibMessage','Başka bir test devam ediyor. Önce onu tamamla.');
+   return;
+  }
+  const api=window.GuardAdaptiveNeutralPreview,v=currentValues();
+  if(!api||!v||document.hidden){
+   showText('calibMessage','Kontrolcü/kalibrasyon modülü bulunamadı veya sekme gizli. Kolun bir tuşuna basıp yeniden dene.');
+   return;
+  }
+  state.neutralCandidate=null;
+  state.neutral={
+   stage:'first',start:performance.now(),last:-1,samples:[],first:null,firstCenters:null,
+   moved:[false,false],id:v.g.id,index:v.g.index,count:capacity(v.g),
+   axisSignature:state.axes.join(',')
+  };
+  $('calibBtn').disabled=true;
+  $('calibCancelBtn').classList.remove('hidden');
+  $('measureBtn').disabled=true;$('fullTestBtn').disabled=true;$('previewBtn').disabled=true;
+  $('deadzone').disabled=true;$('device').disabled=true;
+  AXIS_IDS.forEach(id=>$(id).disabled=true);
+  showText('calibTimer','5 sn');
+  showText('calibMessage','1. ölçüm: İki analogu tamamen bırak ve 5 saniye dokunma.');
+ }
+ function calibFrame(now,v){
+  const api=window.GuardAdaptiveNeutralPreview;
+  const n=state.neutral;
+  if(n){
+   if(!api||!v||document.hidden||v.g.id!==n.id||v.g.index!==n.index||
+      capacity(v.g)!==n.count||state.axes.join(',')!==n.axisSignature){
+    calibFinish('Kontrolcü veya eksen eşlemesi değişti; kalibrasyon iptal edildi.');
+   }else if(n.stage==='move'){
+    const observed=api.moveEvidence(v.a,n.firstCenters,n.count);
+    const wasReady=n.moved[0]&&(n.count===2||n.moved[1]);
+    n.moved[0] ||= observed[0];
+    if(n.count===4)n.moved[1] ||= observed[1];
+    const ready=n.moved[0]&&(n.count===2||n.moved[1]);
+    if(ready&&!wasReady){
+     $('calibBtn').disabled=false;
+     $('calibBtn').textContent='2. nötr ölçümünü başlat (5 sn)';
+     showText('calibMessage','Hareket algılandı. İki analogu bırak, ardından ikinci ölçümü başlat. Bu, fiziksel bırakmayı kanıtlamaz.');
+    }
+   }else if(n.stage==='first'||n.stage==='second'){
+    const elapsed=now-n.start;
+    showText('calibTimer',Math.max(0,Math.ceil((5000-elapsed)/1000))+' sn');
+    if(elapsed>=5000){
+     if(n.stage==='first'){
+      const first=api.reviewFirst(n.samples,n.count);
+      if(!first.ok){
+       calibFinish('İlk nötr ölçüm reddedildi ('+first.reason+'). Hareketli/eksik veri olabilir. Baştan dene.');
+      }else{
+       n.first=n.samples;n.firstCenters=first.centers;n.samples=[];n.stage='move';
+       showText('calibTimer','Hareket');
+       showText('calibMessage','Şimdi iki analogu belirgin şekilde hareket ettir (en az %7,5). Sonra ikisini bırak.');
+      }
+     }else{
+      const review=api.review(n.first,n.samples,n.moved,n.count);
+      if(!review.ok){
+       calibFinish('Kalibrasyon reddedildi ('+review.reason+'). İki boşta ölçüm uyuşmadı veya kararsız.');
+      }else{
+       state.neutralCandidate={
+        id:n.id,index:n.index,signature:n.axisSignature,count:n.count,centers:review.centers
+       };
+       calibFinish('İki nötr pencere uyumlu bulundu. Aşağıda ham/deadzone/merkez karşılaştırması var. Fiziksel bırakma doğrulanmadı.',true);
+      }
+     }
+    }else if(now-n.last>=45){
+     n.samples.push([...v.a]);
+     n.last=now;
+    }
+   }
+  }
+  const candidate=state.neutralCandidate;
+  if(candidate&&(!v||v.g.id!==candidate.id||v.g.index!==candidate.index||
+     state.axes.join(',')!==candidate.signature||capacity(v.g)!==candidate.count)){
+   state.neutralCandidate=null;
+   showText('calibMessage','Kontrolcü/eşleme değişti; eski kalibrasyon önizlemesi kaldırıldı.');
+  }
+  const c=state.neutralCandidate;
+  const result=c&&v&&api?api.compare(v.a,c.centers,Number($('deadzone').value)/100,c.count):null;
+  for(const [side,name] of ['Left','Right'].entries()){
+   const r=result?.[side];
+   showText('calib'+name+'Raw',r?r.rawPct.toFixed(2)+'%':'--');
+   showText('calib'+name+'Fixed',r?r.fixedPct.toFixed(2)+'%':'--');
+   showText('calib'+name+'Center',r?r.centerOnlyPct.toFixed(2)+'%':'--');
+  }
+ }
  function measure(){
-  if(state.quick||state.full||state.preview)return;
+  if(state.quick||state.full||state.preview||state.neutral)return;
   const v=currentValues();
   if(!v||document.hidden){showText('measureMessage','Önce analogları algılanan bir kol bağla.');return;}
   state.quick={time:performance.now(),last:-1,id:v.g.id,index:v.g.index};
@@ -249,7 +360,7 @@
   AXIS_IDS.forEach((id,i)=>$(id).disabled=capacity(chosen())===2&&i>=2);
  }
  async function startFull(){
-  if(state.full||state.quick||state.preview)return;
+  if(state.full||state.quick||state.preview||state.neutral)return;
   const v=currentValues();
   if(!v){showText('phaseMessage','Önce kontrolcünü bağla ve eksenleri kontrol et.');return;}
   if(!$('testAck').checked){showText('phaseMessage','Önce veri kaydı bilgilendirmesini onayla.');return;}
@@ -318,6 +429,7 @@
  function frame(now){
   const v=currentValues(),g=v?.g;
   displayLive(v);
+  calibFrame(now,v);
   if(state.preview){
    const p=state.preview;
    if(!v||document.hidden||g.id!==p.id||g.index!==p.index){
@@ -414,7 +526,8 @@
   }
  }
  function choose(kind){
-  if(state.full||state.quick||state.preview)return;
+  if(state.full||state.quick||state.preview||state.neutral)return;
+  state.neutralCandidate=null;
   state.kind=kind;state.surveyMode='pending';
   state.data=null;state.uploaded=false;$('deadzone').disabled=false;clearRest();
   $('home').classList.add('hidden');$('test').classList.remove('hidden');
@@ -423,16 +536,18 @@
   refresh();window.scrollTo({top:0,behavior:'instant'});
  }
  function back(){
-  if(state.full||state.quick||state.preview)return;
+  if(state.full||state.quick||state.preview||state.neutral)return;
+  state.neutralCandidate=null;
   $('home').classList.remove('hidden');$('test').classList.add('hidden');
   state.kind=null;state.data=null;state.fullSamples=[];state.surveyMode='pending';
   window.scrollTo({top:0,behavior:'instant'});
  }
  document.querySelectorAll('[data-kind]').forEach(b=>b.addEventListener('click',()=>choose(b.dataset.kind)));
  $('back').addEventListener('click',back);
- $('device').addEventListener('change',e=>{if(state.full||state.quick)return;state.selected=e.target.value;mapping(chosen());clearRest();refresh();});
+ $('device').addEventListener('change',e=>{if(state.full||state.quick||state.neutral)return;state.neutralCandidate=null;state.selected=e.target.value;mapping(chosen());clearRest();refresh();});
  AXIS_IDS.forEach((id,i)=>$(id).addEventListener('change',()=>{
-  if(state.full||state.quick)return;
+  if(state.full||state.quick||state.neutral)return;
+  state.neutralCandidate=null;
   state.axes[i]=Number($(id).value);state.mappingMode='custom';
   showText('mappingStatus',mapped(chosen())?'Özel eksen düzeni seçildi.':
     'Geçersiz eşleme: sol/sağ yönlere farklı eksenler seç.');
@@ -453,6 +568,8 @@
   }
   updateRest();
  });
+ $('calibBtn').addEventListener('click',calibBegin);
+ $('calibCancelBtn').addEventListener('click',()=>calibFinish('Kalibrasyon kullanıcı tarafından iptal edildi.'));
  $('previewBtn').addEventListener('click',previewBegin);
  $('previewStopBtn').addEventListener('click',()=>previewEnd('Deneme durduruldu; eksik ölçümler saklanmadı.'));
  $('measureBtn').addEventListener('click',measure);
@@ -476,6 +593,8 @@
  $('exportDataBtn').addEventListener('click',download);
  window.addEventListener('gamepadconnected',refresh);
  window.addEventListener('gamepaddisconnected',()=>{
+  if(state.neutral)calibFinish('Kontrolcü bağlantısı koptu; kalibrasyon iptal edildi.');
+  state.neutralCandidate=null;
   if(state.preview)previewEnd('Kontrolcü bağlantısı koptu. Deneme durduruldu.');
   if(state.full)abortFull('Kontrolcü bağlantısı koptu.');
   if(state.quick)quickCancel('Kontrolcü bağlantısı koptu.');
@@ -483,6 +602,8 @@
  });
  document.addEventListener('visibilitychange',()=>{
   if(!document.hidden)return;
+  if(state.neutral)calibFinish('Sekme gizlendi; kalibrasyon iptal edildi.');
+  state.neutralCandidate=null;
   if(state.preview)previewEnd('Sekme gizlendi; deneme durduruldu.');
   if(state.full)abortFull('Sekme gizlendi; kayıt iptal edildi.');
   if(state.quick)quickCancel('Sekme gizlendi; kısa test iptal edildi.');
