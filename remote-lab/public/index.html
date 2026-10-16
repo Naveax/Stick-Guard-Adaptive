@@ -7,6 +7,7 @@
   <meta name="description" content="Kontrolcü stick driftini yüzdeyle ölç, deneysel anti-stick drift filtresini canlı karşılaştır.">
   <title>GuardAdaptive | Stick Drift Testi</title>
   <link rel="stylesheet" href="/simple.css">
+  <script src="/idle-quality.js" defer></script>
   <script src="/app.js" defer></script>
 </head>
 <body>
@@ -84,7 +85,7 @@
       </article>
     </div>
     <div class="measure">
-      <div><strong id="measureTitle">Driftini ölç</strong><p id="measureMessage" role="status" aria-live="polite">İki analogu da bırak. 5 saniye boyunca hiçbirine dokunmadan bekle.</p></div>
+      <div><strong id="measureTitle">Driftini ölç</strong><p id="measureMessage" role="status" aria-live="polite">İki analogu da bırak. 5 saniye boyunca hiçbirine dokunmadan bekle.</p><p id="idleQualityStatus" role="status" aria-live="polite">Ölçüm alınmadı. Boşta kalite kontrolü henüz yapılmadı.</p></div>
       <div class="measure-buttons"><span id="timer">5 sn</span><button type="button" id="measureBtn" class="primary">Boştaki drifti ölç (5 sn)</button><button type="button" id="cancelBtn" class="secondary hidden">Durdur</button></div>
     </div>
     <section class="full-test" aria-labelledby="fullTestHeading">
