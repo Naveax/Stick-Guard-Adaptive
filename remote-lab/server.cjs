@@ -5,7 +5,7 @@ const http=require('node:http'),fs=require('node:fs'),fsp=require('node:fs/promi
 const {validateStudy,analyzeStudy}=require('./paired-study.cjs');
 const {validateTelemetry,summarizeTelemetry}=require('./telemetry.cjs');
 const ROOT=__dirname, PUBLIC=path.join(ROOT,'public');
-const TYPES={'/':['index.html','text/html; charset=utf-8'],'/app.js':['app.js','text/javascript; charset=utf-8'],'/styles.css':['styles.css','text/css; charset=utf-8'],'/simple.css':['simple.css','text/css; charset=utf-8'],'/admin':['admin.html','text/html; charset=utf-8'],'/admin.js':['admin.js','text/javascript; charset=utf-8'],
+const TYPES={'/':['index.html','text/html; charset=utf-8'],'/app.js':['app.js','text/javascript; charset=utf-8'],'/idle-quality.js':['idle-quality.js','text/javascript; charset=utf-8'],'/styles.css':['styles.css','text/css; charset=utf-8'],'/simple.css':['simple.css','text/css; charset=utf-8'],'/admin':['admin.html','text/html; charset=utf-8'],'/admin.js':['admin.js','text/javascript; charset=utf-8'],
 '/compare':['compare.html','text/html; charset=utf-8'],
 '/compare/':['compare.html','text/html; charset=utf-8'],
 '/compare.js':['compare.js','text/javascript; charset=utf-8'],
