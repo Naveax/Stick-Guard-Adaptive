@@ -30,6 +30,7 @@ pub mod live_monitor;
 pub mod measured_lab;
 pub mod motion_first;
 pub mod neutral_audit;
+pub mod neutral_gate_v85;
 pub mod neutral_session;
 pub mod neutral_trend_v42;
 pub mod noise_guard;

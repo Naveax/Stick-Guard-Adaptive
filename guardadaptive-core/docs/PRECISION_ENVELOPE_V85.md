@@ -4,7 +4,9 @@
 Keep the remaining radial stick offset strictly below 0.9% for an initial signed -10% to +10% bias on each axis, while avoiding loss of deliberately small control movements. No algorithm can promise this for arbitrary unobserved shifts with unknown player intent.
 
 ## Implementation and reproducible experiment
-- Tests: tests/precision_envelope_v85.rs; no changes to the live engine, gamepad driver, website or model parameters.
+- Tests: tests/precision_envelope_v85.rs; no changes to the live gamepad driver, website or model parameters.
+- New research-only library module: src/neutral_gate_v85.rs. Two independently user-confirmed neutral windows must have stable, consistent centers; contaminated/outlier windows are rejected, not silently averaged. The output preview subtracts the center without a deadzone. The module is not connected to the active gameplay path.
+- This gate cannot authenticate a real physical release: even two perfectly stable but wrongly labeled held-input windows can fool it. A dedicated regression test demonstrates that failure.
 - 441 synthetic constant drift cases: independently signed 21 x 21 axis offsets, XInput16 quantization; this includes diagonal radial biases above 10%.
 - The synthetic generator explicitly guarantees physical-neutral conditions for 320 calibration frames. Real volunteers' self-reported release does NOT carry this guarantee.
 - Candidate: existing GuardAdaptive core with OutputPolicy::PreserveMicro and auto_alpha=0, i.e. no output deadzone and no blind gameplay recentering.
