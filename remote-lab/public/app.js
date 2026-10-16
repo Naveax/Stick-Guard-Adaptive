@@ -115,6 +115,7 @@
   }
   showText('rawCaption','Boştaki drift ölçümü bekleniyor');
   showText('filteredCaption','Filtreli sonuç sanaldır, kol değiştirilmez');
+  showText('idleQualityStatus','Ölçüm alınmadı. Boşta kalite kontrolü henüz yapılmadı.');
  }
  function restFrom(values,deadzone){
   function one(side){
@@ -129,18 +130,34 @@
   return [one(0),one(1)];
  }
  function updateRest(){
-  if(!state.restSample&&!state.restSeparate)return;
+  if(!state.restSample&&!state.restSeparate)return null;
   const dz=Number($('deadzone').value);
+  const leftValues=state.restSeparate?state.restSeparate.left:state.restSample;
+  const rightValues=state.restSeparate?state.restSeparate.right:state.restSample;
   const [l,r]=state.restSeparate?
-   [restFrom(state.restSeparate.left,dz)[0],restFrom(state.restSeparate.right,dz)[1]]:
+   [restFrom(leftValues,dz)[0],restFrom(rightValues,dz)[1]]:
    restFrom(state.restSample,dz);
-  showText('leftRestRaw',l.raw);showText('leftRestFiltered',l.filtered);
+  // A stable raw stick is only an observation. It does NOT prove release.
+  const check=window.GuardAdaptiveIdleQuality?.checkIdle;
+  const lq=check?check(leftValues,0):{valid:false,reason:'QUALITY_CHECK_UNAVAILABLE'};
   const hasRight=capacity(chosen())===4;
-  showText('rightRestRaw',hasRight?r.raw:'Yok');showText('rightRestFiltered',hasRight?r.filtered:'Yok');
-  showText('rawTotal',Math.max(l.rawFloat,hasRight?r.rawFloat:0).toFixed(2)+'%');
-  showText('filteredTotal',Math.max(l.filteredFloat,hasRight?r.filteredFloat:0).toFixed(2)+'%');
-  showText('rawCaption','En yüksek boşta RMS · sol ve sağ analog');
-  showText('filteredCaption','Simüle edilmiş en yüksek boşta RMS');
+  const rq=hasRight?(check?check(rightValues,1):{valid:false,reason:'QUALITY_CHECK_UNAVAILABLE'}):null;
+  const accepted=lq.valid&&(!hasRight||rq.valid);
+  showText('leftRestRaw',lq.valid?l.raw:'Geçersiz');
+  showText('leftRestFiltered',lq.valid?l.filtered:'--');
+  showText('rightRestRaw',!hasRight?'Yok':rq.valid?r.raw:'Geçersiz');
+  showText('rightRestFiltered',!hasRight?'Yok':rq.valid?r.filtered:'--');
+  showText('rawTotal',accepted?Math.max(l.rawFloat,hasRight?r.rawFloat:0).toFixed(2)+'%':'--');
+  showText('filteredTotal',accepted?Math.max(l.filteredFloat,hasRight?r.filteredFloat:0).toFixed(2)+'%':'--');
+  showText('rawCaption',accepted?'Gözlenen boşta RMS · gerçek bırakma doğrulanmadı':'Şüpheli boşta hareketi; drift ölçümü geçersiz');
+  showText('filteredCaption',accepted?'Yalnız sanal filtre · fiziksel drift düzeltilmedi':'Filtre başarısı hesaplanmadı · yeniden ölç');
+  const invalid=[];
+  if(!lq.valid)invalid.push('sol analog');
+  if(hasRight&&!rq.valid)invalid.push('sağ analog');
+  showText('idleQualityStatus',accepted?
+   'Kalite kontrolü: sabit sinyal gözlendi. Gerçek fiziksel bırakma bağımsız doğrulanmadı.':
+   'Kalite kontrolü BAŞARISIZ: '+invalid.join(' ve ')+' ölçümünde hareket/sıçrama veya eksik örnek var. Analogları bırakıp yeniden ölç.');
+  return accepted;
  }
  function quickCancel(reason){
   if(!state.quick)return;
@@ -155,8 +172,10 @@
   state.quick=null;
   $('measureBtn').disabled=false;$('cancelBtn').classList.add('hidden');
   showText('timer','Bitti');
-  showText('measureMessage','5 saniyelik bırakma ölçümü tamamlandı. Ham ve deneme yüzdeleri üstte.');
-  updateRest();
+  const qualityOk=updateRest();
+  showText('measureMessage',qualityOk?
+   '5 saniyelik ölçüm tamamlandı. İstikrarlı sinyal görüldü ancak fiziksel bırakma doğrulanmadı.':
+   'Ölçümde şüpheli hareket var; sonucu drift olarak kullanma. Analogları bırakıp yeniden ölç.');
  }
  function previewEnd(message,completed=false){
   const p=state.preview;
@@ -171,8 +190,10 @@
   if(completed&&p.rest.length>=35){
    state.restSample=p.rest;
    state.restSeparate=null;
-   updateRest();
-   showText('previewMessage','Deneme tamamlandı. İlk 5 saniyenin boşta drift sonuçları üstte; analog hareketleri boyunca yalnız sanal filtre uygulandı.');
+   const qualityOk=updateRest();
+   showText('previewMessage',qualityOk?
+    'Deneme tamamlandı. İlk 5 saniyenin istikrarlı ölçümleri gösteriliyor; filtre yalnızca sanal.':
+    'Deneme bitti ancak boşta bölümünde hareket/sıçrama var. Sonuç geçersiz; yeniden ölç.');
   }else{
    showText('previewMessage',message||'Deneme tamamlanmadı. Sekmeyi açık tutup tekrar dene.');
   }
@@ -276,9 +297,11 @@
    const restL=stored.filter(s=>s[0]===0).map(s=>[...toMapped(s[2])]);
    const restR=stored.filter(s=>s[0]===3).map(s=>[...toMapped(s[2])]);
    if(restL.length&&restR.length){state.restSample=null;state.restSeparate={left:restL,right:restR};}
-   updateRest();
-   showText('phaseTitle','6 / 6 · Tamamlandı');
-   showText('phaseMessage',stored.length+' örnek kaydedildi. Her örnekte ham eksenler, tuşlar ve hesaplanan filtre çıkışı var.');
+   const qualityOk=updateRest();
+   showText('phaseTitle',qualityOk?'6 / 6 · Tamamlandı':'6 / 6 · Tamamlandı · kalite uyarısı');
+   showText('phaseMessage',stored.length+' ham örnek kaydedildi. '+
+    (qualityOk?'Boşta ölçüm istikrarlı görünüyor (gerçek bırakma doğrulanmadı).':
+      'Boşta bölümünde şüpheli hareket var. Bu kaydı gerçek drift veya düzeltme başarısı sayma.'));
    $('surveyPrompt').classList.remove('hidden');
    $('surveyPrompt').scrollIntoView({behavior:'smooth',block:'center'});
   }catch(e){
