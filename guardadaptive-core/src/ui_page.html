@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer"><title>GuardAdaptive Lab</title>
+<style>
+:root{font-family:Segoe UI,Inter,system-ui,sans-serif;color:#eaf1fb;background:#0a1120}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 12% 5%,#183251 0,transparent 38%),#0a1120}
+header,main,footer{max-width:1190px;margin:auto}header{padding:30px 24px 16px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+.brand{font-weight:800;font-size:25px;letter-spacing:-.6px}.brand b{color:#6ee7bb}.eyebrow{font-size:11px;letter-spacing:2px;color:#91a7c2;font-weight:700}
+main{padding:12px 24px 28px}.notice{padding:12px 16px;background:#2c2333;border:1px solid #9a6b76;border-radius:12px;color:#ffcfcc;margin:0 0 18px}
+.grid{display:grid;grid-template-columns:1.15fr .85fr;gap:18px}.panel{background:#111e30;border:1px solid #29415b;border-radius:17px;padding:22px;box-shadow:0 18px 50px #0003;margin-bottom:18px}
+h2{font-size:16px;margin:0 0 16px}h3{font-size:14px;margin:12px 0 8px;color:#a3b8cc}
+.hint{color:#9bb1c8;font-size:13px;line-height:1.6}.muted{color:#8fa6bd}
+fieldset{border:0;margin:0;padding:0}.controls{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+label{display:block;font-size:12px;color:#9eb4ce;margin-bottom:7px;font-weight:600}
+input,select{width:100%;background:#091625;color:#e6f1fc;border:1px solid #36516e;border-radius:9px;padding:11px;font:inherit;outline-offset:2px}
+button{font:600 13px Segoe UI,system-ui;color:#092128;border:0;border-radius:10px;background:#73e2bc;padding:12px 16px;cursor:pointer}
+button.secondary{background:#26394f;color:#dceafa;border:1px solid #3c5976}
+button.danger{background:#422c3a;color:#ffdbdf;border:1px solid #794454}
+button:disabled{opacity:.4;cursor:not-allowed}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.sticks{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.stick{background:#0b1929;border:1px solid #29415c;border-radius:13px;padding:10px;text-align:center}
+canvas{width:100%;max-width:260px;aspect-ratio:1/1;display:block;margin:auto}
+.indicator{display:inline-block;width:9px;height:9px;border-radius:50%;background:#eab45a;margin-right:6px}
+.indicator.yes{background:#68dfa8}.status{font-size:13px;color:#c9dcf2}
+.stat{display:flex;justify-content:space-between;border-bottom:1px solid #23354a;padding:11px 0;font-size:13px;gap:12px}
+.stat strong{font-variant-numeric:tabular-nums;text-align:right}
+.step{background:#0b1929;border-radius:12px;padding:17px;border-left:3px solid #73e2bc;line-height:1.6;min-height:100px}
+.stepname{text-transform:uppercase;font-size:11px;letter-spacing:1.3px;color:#86b6e2}
+.progress{height:7px;background:#314157;border-radius:99px;overflow:hidden;margin-top:13px}
+.bar{height:100%;width:0;background:#73e2bc;transition:width .1s}
+.rowControls{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin-top:12px}
+.demoStats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px}
+.demoStats>div{background:#0b1929;border:1px solid #29415c;border-radius:9px;padding:12px;display:flex;flex-direction:column;gap:7px}
+.demoStats span{color:#8fa6bd;font-size:11px}.demoStats strong{font-variant-numeric:tabular-nums;font-size:13px;overflow-wrap:anywhere}
+#feedType{color:#73e2bc}
+@media(max-width:760px){.demoStats{grid-template-columns:repeat(2,1fr)}}
+footer{padding:8px 24px 26px;color:#8499b3;font-size:12px}
+@media(max-width:820px){.grid{grid-template-columns:1fr}.sticks{grid-template-columns:1fr 1fr}.controls{grid-template-columns:1fr 1fr}header{padding:18px 16px}main{padding:8px 16px}}
+@media(max-width:480px){.controls{grid-template-columns:1fr}.sticks{grid-template-columns:1fr}}
+</style></head>
+<body><header><div><div class="eyebrow">LOCAL RESEARCH DASHBOARD</div><div class="brand">Guard<b>Adaptive</b> <span style="color:#7399b9;font-size:15px;font-weight:500">v0.49 (kaynak)</span></div></div><div class="status"><span id="led" class="indicator"></span><span id="connection">Denetleniyor</span></div></header>
+<main><div class="notice">v0.49 kaynak arayüzü: kurulu sürüm farklı olabilir. Salt okunur profil/sürüm görünümü kurulum, rollback veya oyun çıktısına izin vermez. Kullanici onayli notr denetim arayuzde, fiziksel dogruluk HENUZ DOGRULANMADI. Denetim yalnizca analogun serbest oldugu kullanici beyanina dayanir. Otomatik drift tespiti veya oyun ciktisi YOK.</div><div class="notice">v0.44 yazılım laboratuvarı: algoritma karşılaştırması, düşük gecikmeli bellek içi motor ve geri dönüş korumaları eklendi. Sanal kontrolcü sürücüsü ve oyuna giriş gönderimi <b>devre dışı</b>. Fiziksel kabul: BLOCKED.</div><div class="notice">Araştırma sürümü. Bu arayüz yalnızca XInput eksenlerini okur ve kullanıcı onaylı merkez kalibrasyonu yapar. Oyuna kontrolcü komutu göndermez. Kalite onayı: BLOCKED.</div>
+<section class="panel" id="demoPanel">
+  <h2>Çevrimdışı drift laboratuvarı <span style="font-size:11px;color:#f7cc80;margin-left:7px">SENTETİK · GERÇEK KONTROLCÜ DEĞİL</span></h2>
+  <p class="hint">Kontrolcü bağlamadan dört farklı drift davranışını gözlemle. MotionFirst, NoiseGuard, HybridGuard ve DirectionGuard aynı sentetik ham veriyi işler; hedef hareketi yalnızca hata ölçümü için kullanır. Demo asla profil oluşturmaz ve oyun girişine dokunmaz.</p>
+  <div class="rowControls">
+    <div style="min-width:190px;flex:1"><label for="scenario">Test senaryosu</label><select id="scenario">
+      <option value="stable">Sabit drift (%18 / -%9)</option>
+      <option value="flipping">Ani yön değiştiren drift (%85)</option>
+      <option value="creeping">Zamanla artan merkez kayması</option>
+      <option value="noisy">Gürültülü analog (%0,6)</option>
+    </select></div>
+    <button id="demoStart" class="secondary">Simülasyonu başlat</button>
+    <button id="demoStop" class="danger" disabled>Simülasyonu durdur</button>
+  </div>
+  <div class="demoStats">
+    <div><span>Veri kaynağı</span><strong id="feedType">GERÇEK XINPUT</strong></div>
+    <div><span>Sentetik hedef</span><strong id="demoTruth">Başlatılmadı</strong></div>
+    <div><span>Ham RMS hata</span><strong id="demoRawErr">—</strong></div>
+    <div><span>MotionFirst RMS hata</span><strong id="demoCorrectedErr">—</strong></div>
+    <div><span>NoiseGuard RMS hata (aday)</span><strong id="demoNoiseErr">—</strong></div>
+    <div><span>HybridGuard RMS hata (aday)</span><strong id="demoHybridErr">—</strong></div>
+    <div><span>DirectionGuard RMS hata (aday)</span><strong id="demoDirectionErr">—</strong></div>
+    <div><span>ConfidenceDirection RMS hata (deneysel)</span><strong id="demoConfidenceErr">—</strong></div>
+    <div><span>MotionFirst bastırma / ters yön</span><strong id="demoFailures">—</strong></div>
+    <div><span>NoiseGuard bastırma / ters yön</span><strong id="demoNoiseFailures">—</strong></div>
+    <div><span>HybridGuard bastırma / ters yön</span><strong id="demoHybridFailures">—</strong></div>
+    <div><span>DirectionGuard bastırma / ters yön</span><strong id="demoDirectionFailures">—</strong></div>
+    <div><span>DirectionGuard uygulanan geçiş yumuşatma</span><strong id="demoDirectionBlends">—</strong></div>
+    <div><span>Yön filtresi en büyük hareket büyüklüğü farkı</span><strong id="demoDirectionRadius">—</strong></div>
+    <div><span>ConfidenceDirection hareket kaybı / ters yön</span><strong id="demoConfidenceFailures">—</strong></div>
+    <div><span>ConfidenceDirection açı düzeltme sayısı</span><strong id="demoConfidenceRotations">—</strong></div>
+    <div><span>HybridGuard kalibrasyon gürültüsü</span><strong id="demoHybridCalNoise">—</strong></div>
+    <div><span>Yüksek gürültüde ek zayıflatma iptali</span><strong id="demoHybridBypass">—</strong></div>
+    <div><span>Üretilen örnek</span><strong id="demoSamples">0</strong></div>
+  </div>
+</section>
+<div class="grid"><div>
+<section class="panel"><h2>Analog durumları <span class="muted" style="font-weight:400" id="axisCaption">• ham veri</span></h2><div class="sticks">
+ <div class="stick"><h3>Sol analog</h3><canvas id="left" width="250" height="250" aria-label="Sol analog konumu"></canvas><div class="hint" id="leftValue">X 0.00000 · Y 0.00000</div></div>
+ <div class="stick"><h3>Sağ analog</h3><canvas id="right" width="250" height="250" aria-label="Sağ analog konumu"></canvas><div class="hint" id="rightValue">X 0.00000 · Y 0.00000</div></div>
+ </div><p class="hint">Görsel eksenler ham XInput değerleridir. Yeşil nokta analogu gösterir. Görsel hassasiyet, kontrolcünün gerçek ADC çözünürlüğü anlamına gelmez.</p></section>
+<section class="panel"><h2>Seçilen analog · araştırma önizlemesi</h2>
+<div class="stat"><span>Ham giriş</span><strong id="raw">Bekleniyor</strong></div>
+<div class="stat"><span>Kalibre edilmiş çıkış</span><strong id="corrected">Profil yok</strong></div>
+<div class="stat"><span>Profil dosyası</span><strong id="profile">Yok</strong></div>
+ <div class="stat"><span>Önizleme güvenlik modu</span><strong id="previewMode">Henüz yok</strong></div>
+ <div class="stat"><span>Nötr gürültüsü (maks. MAD)</span><strong id="calibrationMad">—</strong></div>
+ <div class="stat"><span>İki bırakma arasındaki fark</span><strong id="calibrationAgreement">—</strong></div>
+ <div class="stat"><span>Belirsizlik göstergesi (olasılık değil)</span><strong id="calibrationUncertainty">—</strong></div>
+<p class="hint">Düzeltme yalnızca yerel önizlemedir. Windows girişine veya oyuna müdahale edilmez.</p></section>
+</div><div>
+<section class="panel"><h2>Kontrolcü ve profil</h2><fieldset class="controls">
+<div><label for="slot">XInput yuvası</label><select id="slot"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></div>
+<div><label for="stick">Kalibre edilecek analog</label><select id="stick"><option value="left">Sol</option><option value="right">Sağ</option></select></div>
+<div style="grid-column:1/-1"><label for="alias">Kontrolcü etiketi (benzersiz kimlik değil)</label><input id="alias" value="MY-CONTROLLER-01" maxlength="64" autocomplete="off" spellcheck="false"></div></fieldset>
+<p class="hint">XInput yuvası fiziksel cihaz kimliği değildir. Farklı kontrolcüler için farklı etiketler kullan.</p></section>
+<section class="panel"><h2>Rehberli kalibrasyon</h2>
+<div class="step"><div class="stepname" id="stage">BAŞLAMADI</div><div id="instruction">Önce kontrolcüyü bağla, yuva ve analog seçimini yap. Ardından kalibrasyonu başlat.</div></div>
+<div class="progress"><div class="bar" id="progressBar"></div></div>
+<div class="stat"><span>Kalan örnek</span><strong id="remaining">0</strong></div>
+<div class="actions"><button id="start">Kalibrasyona başla</button><button id="confirm" class="secondary" disabled>Adımı onayla</button><button id="cancel" class="danger" disabled>İptal</button><button id="profileInventory" class="secondary">Profil listesi</button><button id="profileAudit" class="secondary">Profil dosyasını denetle</button><button id="neutralStart" class="secondary" disabled>Notr merkezi denetle</button><button id="neutralCancel" class="danger" disabled>Denetimi iptal et</button><button id="previewDisable" class="danger" disabled>Önizlemeyi kapat</button></div>
+<div class="stat"><span>Profil kataloğu (yalnızca denetim)</span><strong id="catalogStatus">Henüz açılmadı</strong></div><div id="catalogRows" style="display:grid;gap:6px;max-height:240px;overflow-y:auto" aria-live="polite"></div><p class="hint">Profil listesi dosyaları denetler; cihaz kimliğini doğrulamaz, hiçbir profili otomatik etkinleştirmez. Seçmek yalnızca alias/analog alanlarını değiştirir.</p><div class="stat"><span>Operator onayli notr denetim</span><strong id="neutralStatus">Etkin degil</strong></div><div class="stat"><span>Denetimde kalan ornek</span><strong id="neutralRemaining">0</strong></div><p class="hint" id="message">Her nötr ölçümü için analogu gerçekten bırakman gerekir. Sabit sinyal, bırakmanın kanıtı değildir.</p></section>
+</div></div>
+<section class="panel" id="recoveryPanel" aria-label="Salt okunur kurtarma durumu">
+<h2>Profil ve sürüm durumu <span class="muted" style="font-weight:400">v0.49 · yalnızca inceleme</span></h2>
+<p class="hint">Etkin ve önceki sürüm yalnızca <b>doğrulanmamış yerel etiket</b> olarak okunur. Bu panel SHA-256, yayıncı imzası, v0.48 birleşik denetimi veya fiziksel cihazı doğrulamaz. Oyun çıkışı her zaman kapalıdır.</p>
+<div class="stat"><span>Etkin sürüm etiketi</span><strong id="recoveryActive">Henüz okunmadı</strong></div>
+<div class="stat"><span>Önceki sürüm etiketi</span><strong id="recoveryPrevious">Henüz okunmadı</strong></div>
+<div class="stat"><span>Profil dizini</span><strong id="recoveryDirectory">Henüz okunmadı</strong></div>
+<div class="stat"><span>Profil envanteri</span><strong id="recoveryProfiles">Henüz okunmadı</strong></div>
+<div class="stat"><span>İnceleme sonucu</span><strong id="recoveryReason">Bekleniyor</strong></div>
+<div class="stat"><span>Kurulum / rollback / oyun çıktısı</span><strong id="recoveryGate">BLOCKED</strong></div>
+<div class="actions"><button id="recoveryRefresh" class="secondary" type="button">Salt okunur durumu yenile</button></div>
+<p class="hint" id="recoveryNotice">Sürüm dosyaları okunsa bile yalnızca yerel etiketler gösterilir; bunlar işlem yetkisi değildir.</p>
+</section></main><footer>127.0.0.1 üzerinde çalışan yerel arayüz. Dış ağdan erişim yoktur. Profil kullanıcı onayıyla kaydedilir; otomatik oyuna aktarılmaz.</footer>
+<script>
+'use strict';
+const token="__GUARD_TOKEN__", $=id=>document.getElementById(id);
+let busy=false;
+function draw(id,v,active){const c=$(id),ctx=c.getContext('2d'),w=c.width,h=c.height,cx=w/2,cy=h/2,r=97;
+ctx.clearRect(0,0,w,h);ctx.lineWidth=1;
+ctx.strokeStyle='#314a62';for(let t=0;t<3;t++){ctx.beginPath();ctx.arc(cx,cy,r*(t+1)/3,0,Math.PI*2);ctx.stroke();}
+ctx.beginPath();ctx.moveTo(cx-r-6,cy);ctx.lineTo(cx+r+6,cy);ctx.moveTo(cx,cy-r-6);ctx.lineTo(cx,cy+r+6);ctx.stroke();
+let x=0,y=0;if(v){x=v[0];y=v[1];}
+ctx.strokeStyle='#6197aa';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+x*r,cy-y*r);ctx.stroke();
+ctx.fillStyle=active?'#73e2bc':'#7b8fa4';ctx.beginPath();ctx.arc(cx+x*r,cy-y*r,9,0,Math.PI*2);ctx.fill();}
+function val(v){return v?'X '+v[0].toFixed(5)+' · Y '+v[1].toFixed(5):'Bağlı değil';}
+function render(s){
+ const demo=s.source==='DEMO';
+ $('feedType').textContent=demo?'SENTETİK DEMO':'GERÇEK XINPUT';
+ $('feedType').style.color=demo?'#f7cc80':'#73e2bc';
+ $('axisCaption').textContent=demo?'• SENTETİK HAM VERİ':'• ham veri';
+ $('demoTruth').textContent=demo?val(s.demo_truth):'Başlatılmadı';
+ $('demoRawErr').textContent=demo?s.demo_raw_rmse.toFixed(6):'—';
+ $('demoCorrectedErr').textContent=demo?s.demo_corrected_rmse.toFixed(6):'—';
+ $('demoNoiseErr').textContent=demo?s.demo_noise_rmse.toFixed(6):'—';
+ $('demoHybridErr').textContent=demo?s.demo_hybrid_rmse.toFixed(6):'—';
+ $('demoDirectionErr').textContent=demo?s.demo_direction_rmse.toFixed(6):'—';
+ $('demoConfidenceErr').textContent=demo?s.demo_confidence_rmse.toFixed(6):'—';
+ $('demoFailures').textContent=demo?s.demo_micro_lost+' / '+s.demo_reversed:'—';
+ $('demoNoiseFailures').textContent=demo?s.demo_noise_micro_lost+' / '+s.demo_noise_reversed:'—';
+ $('demoHybridFailures').textContent=demo?s.demo_hybrid_micro_lost+' / '+s.demo_hybrid_reversed:'—';
+ $('demoDirectionFailures').textContent=demo?s.demo_direction_micro_lost+' / '+s.demo_direction_reversed:'—';
+ $('demoDirectionBlends').textContent=demo?s.demo_direction_blended.toLocaleString('tr-TR'):'—';
+ $('demoDirectionRadius').textContent=demo?s.demo_direction_max_radius_delta.toExponential(3):'—';
+ $('demoConfidenceFailures').textContent=demo?s.demo_confidence_micro_lost+' / '+s.demo_confidence_reversed:'—';
+ $('demoConfidenceRotations').textContent=demo?s.demo_confidence_rotations.toLocaleString('tr-TR'):'—';
+ $('demoHybridCalNoise').textContent=demo?s.demo_hybrid_calibration_noise.toFixed(6):'—';
+ $('demoHybridBypass').textContent=demo?s.demo_hybrid_noise_bypass.toLocaleString('tr-TR'):'—';
+ $('demoSamples').textContent=demo?s.demo_samples.toLocaleString('tr-TR'):'0';
+ $('demoStart').disabled=demo||busy||!['Idle','Cancelled','Saved'].includes(s.stage);
+ $('demoStop').disabled=!demo||busy;
+ $('scenario').disabled=demo||busy;
+ $('led').className='indicator'+(s.connected?' yes':'');$('connection').textContent=demo?'SENTETİK DEMO (gerçek cihaz değil)':s.connected?'Kontrolcü bağlı':'Kontrolcü bulunamadı';
+ draw('left',s.left,s.connected);draw('right',s.right,s.connected);
+ $('leftValue').textContent=val(s.left);$('rightValue').textContent=val(s.right);
+ $('raw').textContent=val(s.selected_raw);$('corrected').textContent=s.corrected?val(s.corrected):'Doğrulanmış profil yok';
+ $('profile').textContent=demo?'Demo kaydetmez':s.profile?'Kaydedildi':'Yok';
+ $('previewMode').textContent=demo?'Sentetik demo':s.preview_mode==='calibrated_preview_only'?'Kalibre: yalnız önizleme':s.preview_mode==='uncertain_raw_passthrough'?'BELİRSİZ: ham veri, düzeltme kapalı':'Profil etkin değil';
+ $('calibrationMad').textContent=s.preview_mode!=='none'&&!demo?s.calibration_mad.toFixed(6):'—';
+ $('calibrationAgreement').textContent=s.preview_mode!=='none'&&!demo?s.calibration_agreement.toFixed(6):'—';
+ $('calibrationUncertainty').textContent=s.preview_mode!=='none'&&!demo?s.calibration_uncertainty_bound.toFixed(6):'—';
+ $('stage').textContent=s.stage;$('instruction').textContent=s.instruction;
+ $('remaining').textContent=s.remaining;
+ $('progressBar').style.width=s.stage==='SampleFirst'||s.stage==='SampleSecond'?((128-s.remaining)/128*100)+'%':s.stage==='Review'?'100%':'0%';
+ $('message').textContent=s.message;
+ const active=s.stage!=='Idle'&&s.stage!=='Cancelled'&&s.stage!=='Saved';
+ $('start').disabled=demo||!s.connected||active||busy;
+ $('profileInventory').disabled=demo||active||busy;
+ $('profileAudit').disabled=demo||active||busy;
+ $('previewDisable').disabled=demo||active||busy||(!s.profile&&!s.neutral_audit_active);
+ $('neutralStart').disabled=demo||active||busy||!s.connected||!s.profile||s.preview_mode!=='calibrated_preview_only'||s.neutral_audit_active;
+ $('neutralCancel').disabled=busy||!s.neutral_audit_active;
+ $('neutralStatus').textContent=s.neutral_audit_result||'not_started';
+ $('neutralRemaining').textContent=s.neutral_audit_remaining??0;
+ $('cancel').disabled=demo||!active||busy;
+ $('confirm').disabled=demo||!['AskFirstRelease','AskMovement','AskSecondRelease','Review'].includes(s.stage)||!s.connected||busy;
+ $('confirm').textContent=s.stage==='Review'?'Profili kaydet':s.stage==='AskMovement'?'Hareket tamamlandı':'Analogu bıraktım';
+ // Input selection must not silently shift the active calibration stick.
+ for(const field of ['slot','stick','alias'])$(field).disabled=demo||active||busy;
+}
+async function status(){try{const r=await fetch('/api/status',{cache:'no-store'});if(!r.ok)throw Error('HTTP '+r.status);render(await r.json());}catch(e){$('connection').textContent='Bağlantı kesildi';$('led').className='indicator';$('message').textContent='Sunucu yanıt vermiyor: '+String(e);}}
+async function action(name){
+ if(busy)return;busy=true;
+ const data=new URLSearchParams({action:name,released:name==='neutral_start'?'confirmed':'',scenario:$('scenario').value,slot:$('slot').value,stick:$('stick').value,alias:$('alias').value});
+ try{let r=await fetch('/api/action',{method:'POST',headers:{'X-Guard-Token':token,'Content-Type':'application/x-www-form-urlencoded'},body:data.toString()});let out=await r.json();if(!r.ok)$('message').textContent=out.error||'İşlem reddedildi';}
+ catch(e){$('message').textContent=String(e);}finally{busy=false;await status();}
+}
+$('demoStart').onclick=()=>action('demo_start');$('demoStop').onclick=()=>action('demo_stop');
+$('start').onclick=()=>action('start');$('confirm').onclick=()=>action('confirm');$('cancel').onclick=()=>action('cancel');
+$('neutralStart').onclick=()=>{if(window.confirm('Analogun gercekten SERBEST oldugunu ve denetim boyunca oynamayacaginizi onayliyor musunuz? Bu olcum fiziksel serbest birakma kaniti degildir.'))action('neutral_start');};
+$('neutralCancel').onclick=()=>action('neutral_cancel');
+async function catalog(){
+ if(busy)return;
+ const control=$('profileInventory');
+ control.disabled=true;
+ try{
+  const r=await fetch('/api/profile-catalog',{headers:{'X-Guard-Token':token},cache:'no-store'});
+  if(!r.ok)throw Error('HTTP '+r.status);
+  const inv=await r.json();
+  if(inv.profiles_auto_activated!==false||inv.physical_device_id_authenticated!==false)
+   throw Error('Unsafe catalog claims');
+  $('catalogStatus').textContent=inv.valid+' geçerli, '+inv.invalid+' reddedildi, '+inv.ignored+' ilgisiz';
+  const rows=$('catalogRows');
+  rows.replaceChildren();
+  for(const profile of inv.rows){
+   const line=document.createElement('div');
+   line.className='stat';
+   const summary=document.createElement('span');
+   summary.textContent=profile.alias+' / '+profile.stick+' / '+(profile.valid?'DOSYA OK':'REDDEDİLDİ');
+   line.appendChild(summary);
+   if(profile.valid){
+    const select=document.createElement('button');
+    select.className='secondary';
+    select.textContent='Yalnızca adı seç';
+    select.onclick=async()=>{
+     if(busy||$('alias').disabled||$('stick').disabled)return;
+     $('alias').value=profile.alias;$('stick').value=profile.stick;
+     await action('select');
+    };
+    line.appendChild(select);
+   }
+   rows.appendChild(line);
+  }
+  if(inv.rows.length===0){
+   const empty=document.createElement('span');
+   empty.textContent='Henüz kayıtlı profil bulunamadı.';
+   rows.appendChild(empty);
+  }
+ }catch(err){
+  $('catalogStatus').textContent='Katalog okunamadı: '+String(err);
+  $('catalogRows').replaceChildren();
+ }finally{control.disabled=false;}
+}
+$('profileInventory').onclick=catalog;$('profileAudit').onclick=()=>action('profile_audit');$('previewDisable').onclick=()=>action('preview_disable');
+async function recoveryOverview(){
+ const button=$('recoveryRefresh');
+ button.disabled=true;
+ const reset=()=>{
+  $('recoveryActive').textContent='DOĞRULANMADI';
+  $('recoveryPrevious').textContent='DOĞRULANMADI';
+  $('recoveryDirectory').textContent='BİLİNMİYOR';
+  $('recoveryProfiles').textContent='BİLİNMİYOR';
+  $('recoveryReason').textContent='GÜVENLİK NEDENİYLE KABUL YOK';
+  $('recoveryGate').textContent='BLOCKED';
+ };
+ reset();
+ try{
+  const res=await fetch('/api/recovery-overview',{headers:{'X-Guard-Token':token},cache:'no-store'});
+  if(!res.ok)throw Error('HTTP '+res.status);
+  const info=await res.json();
+  if(info.source!=='v49_readonly_ui_recovery_overview'||
+     info.production_gate!=='BLOCKED'||info.rollback_authorized!==false||
+     info.install_authorized!==false||info.game_input_writes!==0||
+     info.version_integrity_verified!==false||
+     info.publisher_signature_verified!==false||
+     info.hardware_identity_verified!==false||
+     info.v48_combined_audit_executed_by_ui!==false){
+   throw Error('İnceleme yanıtı güvenli değil');
+  }
+  const version=m=>m&&m.state==='valid_syntax_only'&&typeof m.version==='string'?m.version+' (etiket, imzasız)':'YOK veya GEÇERSİZ';
+  $('recoveryActive').textContent=version(info.active);
+  $('recoveryPrevious').textContent=version(info.previous);
+  $('recoveryDirectory').textContent=String(info.profile_directory);
+  $('recoveryProfiles').textContent=info.profiles_valid+' geçerli, '+info.profiles_invalid+' reddedildi, '+info.profiles_ignored+' ilgisiz';
+  $('recoveryReason').textContent=String(info.reason);
+  $('recoveryNotice').textContent='Yalnızca dosya görünümü: sürüm hash/yayıncı doğrulaması, gerçek cihaz kimliği ve v0.48 tam kabul testi burada çalıştırılmadı.';
+ }catch(e){
+  reset();
+  $('recoveryNotice').textContent='Denetim okunamadı: '+String(e)+'. Hiçbir kurulum veya rollback izni verilmedi.';
+ }finally{button.disabled=false;}
+}
+$('recoveryRefresh').onclick=recoveryOverview;
+recoveryOverview();
+['slot','stick'].forEach(x=>$(x).onchange=()=>action('select'));
+status();setInterval(status,120);
+</script></body></html>

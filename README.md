@@ -2,7 +2,7 @@
 
 **GuardAdaptive** için kontrolcü *stick drift* ölçüm ve araştırma deposu.
 
-> **Güncel durum (2026-10-16):** Bu depodaki ilk yayın, **work-pc üzerindeki Remote Lab / tarayıcı tabanlı test sitesidir**. Naveax bilgisayarındaki **Rust GuardAdaptive adaptif algoritması henüz bu depoya aktarılmadı.** Rust çekirdeği ve gerçek oyun girdisi düzeltmesi bu sürümün parçası değildir.
+> **Güncel durum (2026-10-16):** Bu depodaki ilk yayın, **work-pc üzerindeki Remote Lab / tarayıcı tabanlı test sitesidir**. Naveax bilgisayarındaki **Rust GuardAdaptive v0.84.0 çekirdeği artık guardadaptive-core/ klasöründedir.** Rust çekirdeği ve work-pc web sitesi henüz entegre değil; gerçek oyun girdisi düzeltmesi üretimde kapalıdır.
 
 ## İşlevler
 
@@ -52,4 +52,4 @@ Canlı `√(X² + Y²) × 100` değeri analog konumunun merkeze uzaklığıdır.
 
 Katılımcı örnekleri, ankette yazılan kişisel bilgiler, IP adresleri, cihaz kimlikleri, oturum anahtarları, yönetici tokenları ve `.env` dosyaları **depo dışında** tutulmalıdır. Mevcut araştırma çıktıları **üretim kullanımı için onaylanmamıştır (BLOCKED)** ve otomatik model eğitimine katılmaz. Herkese açık denemelerde yeterli bilgilendirme ve katılımcı rızası gerekir.
 
-**Durum:** Work-pc Remote Lab yayında; Naveax Rust çekirdeği, fiziksel donanım doğrulaması ve üretim güvenlik kabulü bekleniyor. 
+**Durum:** Work-pc Remote Lab yayında; Naveax Rust çekirdeği depoda, entegrasyon ve fiziksel kabul bekleniyor.

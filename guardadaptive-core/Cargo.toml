@@ -1,0 +1,18 @@
+[package]
+name = "guardadaptive"
+version = "0.84.0"
+edition = "2021"
+description = "Deterministic adaptive controller drift research engine"
+
+[lib]
+name = "guardadaptive"
+path = "src/lib.rs"
+
+[[bin]]
+name = "guardadaptive"
+path = "src/main.rs"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+panic = "abort"

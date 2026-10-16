@@ -1,0 +1,23 @@
+name: GuardAdaptive Rust tests
+on:
+  push:
+    branches: [main]
+    paths: ['guardadaptive-core/**', '.github/workflows/rust-core-tests.yml']
+  pull_request:
+    paths: ['guardadaptive-core/**', '.github/workflows/rust-core-tests.yml']
+permissions:
+  contents: read
+jobs:
+  rust-core:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: guardadaptive-core
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use stable Rust
+        run: rustup default stable
+      - name: Check
+        run: cargo check --locked --offline
+      - name: Unit tests
+        run: cargo test --locked --offline
