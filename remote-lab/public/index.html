@@ -55,6 +55,18 @@
       <input id="deadzone" type="range" min="0" max="25" value="8" step="1">
       <p>Filtre merkezi bastırır. Yüzdenin azalması, fiziksel driftin onarıldığı anlamına gelmez.</p>
     </div>
+    <section class="preview-panel" aria-labelledby="previewHeading">
+      <div>
+        <strong id="previewHeading">Anti-stick drift denemesi</strong>
+        <p>20 saniyelik tarayıcı önizlemesi: ilk 5 saniye analogları bırak, kalan sürede hareket et. Ham ve filtreli konumlar yan yana görünür. Gerçek oyun girdisi değişmez.</p>
+        <p id="previewMessage" role="status" aria-live="polite">Kolunu bağla ve bir tuşuna bas. Sonra denemeyi başlatabilirsin.</p>
+      </div>
+      <div class="preview-actions">
+        <strong id="previewTimer" role="status">20 sn</strong>
+        <button type="button" id="previewBtn" class="primary">Anti-stick drift dene (20 sn)</button>
+        <button type="button" id="previewStopBtn" class="secondary hidden">Denemeyi durdur</button>
+      </div>
+    </section>
     <div class="sticks">
       <article class="stick" aria-label="Sol analog">
         <div class="stick-heading"><h2>Sol analog</h2><span id="leftStatus" class="status">Canlı</span></div>
