@@ -1,0 +1,32 @@
+name: Remote Lab tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  node-tests:
+    name: Node.js tests (22)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: remote-lab
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify JavaScript syntax
+        run: |
+          node --check server.cjs
+          node --check telemetry.cjs
+          node --check paired-study.cjs
+          node --check public/app.js
+      - name: Run tests without external services
+        run: node --test test.cjs paired-study.test.cjs telemetry.test.cjs
