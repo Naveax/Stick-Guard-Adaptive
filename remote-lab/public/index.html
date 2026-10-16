@@ -8,6 +8,7 @@
   <title>GuardAdaptive | Stick Drift Testi</title>
   <link rel="stylesheet" href="/simple.css">
   <script src="/idle-quality.js" defer></script>
+  <script src="/neutral-preview.js" defer></script>
   <script src="/app.js" defer></script>
 </head>
 <body>
@@ -67,6 +68,23 @@
         <button type="button" id="previewBtn" class="primary">Anti-stick drift dene (20 sn)</button>
         <button type="button" id="previewStopBtn" class="secondary hidden">Denemeyi durdur</button>
       </div>
+    </section>
+    <section class="calibration-panel" aria-labelledby="calibHeading">
+      <h2 id="calibHeading">İki aşamalı nötr kalibrasyon · güvenli önizleme</h2>
+      <p>Önce iki analogu bırakıp ilk 5 saniyelik ölçümü al. Ardından ikisini bilinçli şekilde hareket ettir, tekrar bırak ve ikinci ölçümü başlat. Kayıtlar uyuşmazsa işlem reddedilir.</p>
+      <p>Önemli: Tarayıcı analoga gerçekten dokunmadığını doğrulayamaz. Bu yalnızca sanal merkez çıkarma karşılaştırmasıdır; oyuna uygulanmaz ve sunucuya gönderilmez.</p>
+      <div class="calibration-actions">
+        <button type="button" id="calibBtn" class="primary">1. nötr ölçümünü başlat (5 sn)</button>
+        <button type="button" id="calibCancelBtn" class="secondary hidden">İptal et</button>
+        <strong id="calibTimer">Hazır</strong>
+      </div>
+      <p id="calibMessage" role="status" aria-live="polite">Bu isteğe bağlı önizleme tam kontrolcü testinden ayrıdır.</p>
+      <div class="calib-results" aria-label="Canlı sanal filtre karşılaştırması">
+        <div><strong>Analog</strong><strong>Ham</strong><strong>8% deadzone</strong><strong>Merkez çıkarma</strong></div>
+        <div><span>Sol</span><span id="calibLeftRaw">--</span><span id="calibLeftFixed">--</span><span id="calibLeftCenter">--</span></div>
+        <div><span>Sağ</span><span id="calibRightRaw">--</span><span id="calibRightFixed">--</span><span id="calibRightCenter">--</span></div>
+      </div>
+      <p id="calibDisclaimer">Son sütun ancak iki nötr ölçüm uygun bulununca gösterilir. Değerler anlık analog konumudur, kanıtlanmış kalan drift değildir. %0,9 garantisi verilmez.</p>
     </section>
     <div class="sticks">
       <article class="stick" aria-label="Sol analog">
