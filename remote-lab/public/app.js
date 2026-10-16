@@ -12,7 +12,7 @@
  ];
  const state={
   kind:null,selected:null,axisKey:null,axes:[0,1,2,3],mappingMode:'standard',
-  quick:null,quickSamples:[],full:false,fullCancelled:false,fullPhase:-1,
+  quick:null,quickSamples:[],preview:null,full:false,fullCancelled:false,fullPhase:-1,
   fullStarted:0,phaseStarted:0,fullResolver:null,fullLast:-1,fullSamples:[],
   fullDevice:null,fullAxesCount:0,fullButtonsCount:0,fullDeadzone:8,
   data:null,surveyMode:'pending',uploaded:false,restSample:null,restSeparate:null
@@ -158,8 +158,52 @@
   showText('measureMessage','5 saniyelik bırakma ölçümü tamamlandı. Ham ve deneme yüzdeleri üstte.');
   updateRest();
  }
+ function previewEnd(message,completed=false){
+  const p=state.preview;
+  if(!p)return;
+  state.preview=null;
+  $('previewBtn').disabled=false;
+  $('previewStopBtn').classList.add('hidden');
+  $('measureBtn').disabled=false;
+  $('fullTestBtn').disabled=false;
+  $('deadzone').disabled=state.uploaded;
+  showText('previewTimer',completed?'Bitti':'20 sn');
+  if(completed&&p.rest.length>=35){
+   state.restSample=p.rest;
+   state.restSeparate=null;
+   updateRest();
+   showText('previewMessage','Deneme tamamlandı. İlk 5 saniyenin boşta drift sonuçları üstte; analog hareketleri boyunca yalnız sanal filtre uygulandı.');
+  }else{
+   showText('previewMessage',message||'Deneme tamamlanmadı. Sekmeyi açık tutup tekrar dene.');
+  }
+ }
+ function previewBegin(){
+  if(state.preview)return;
+  if(state.full||state.quick){
+   showText('previewMessage','Önce devam eden ölçümü tamamla veya durdur.');
+   return;
+  }
+  const v=currentValues();
+  if(!v){
+   showText('previewMessage','Kontrolcü algılanmadı. USB/Bluetooth bağlantısını kontrol et, kolun bir tuşuna bas ve sayfayı Chrome/Edge üzerinden HTTPS ile aç.');
+   return;
+  }
+  if(document.hidden){
+   showText('previewMessage','Denemeyi başlatmak için bu sekmeyi görünür tut.');
+   return;
+  }
+  state.preview={start:performance.now(),last:-1,id:v.g.id,index:v.g.index,rest:[]};
+  clearRest();
+  $('previewBtn').disabled=true;
+  $('previewStopBtn').classList.remove('hidden');
+  $('measureBtn').disabled=true;
+  $('fullTestBtn').disabled=true;
+  $('deadzone').disabled=true;
+  showText('previewTimer','20 sn');
+  showText('previewMessage','İlk 5 saniye iki analogu da bırak. Sonra küçük ve tam hareketler yap; iki renkli noktayı karşılaştır.');
+ }
  function measure(){
-  if(state.quick||state.full)return;
+  if(state.quick||state.full||state.preview)return;
   const v=currentValues();
   if(!v||document.hidden){showText('measureMessage','Önce analogları algılanan bir kol bağla.');return;}
   state.quick={time:performance.now(),last:-1,id:v.g.id,index:v.g.index};
@@ -184,7 +228,7 @@
   AXIS_IDS.forEach((id,i)=>$(id).disabled=capacity(chosen())===2&&i>=2);
  }
  async function startFull(){
-  if(state.full||state.quick)return;
+  if(state.full||state.quick||state.preview)return;
   const v=currentValues();
   if(!v){showText('phaseMessage','Önce kontrolcünü bağla ve eksenleri kontrol et.');return;}
   if(!$('testAck').checked){showText('phaseMessage','Önce veri kaydı bilgilendirmesini onayla.');return;}
@@ -251,6 +295,21 @@
  function frame(now){
   const v=currentValues(),g=v?.g;
   displayLive(v);
+  if(state.preview){
+   const p=state.preview;
+   if(!v||document.hidden||g.id!==p.id||g.index!==p.index){
+    previewEnd('Kontrolcü bağlantısı kesildi veya sekme gizlendi. Deneme güvenli biçimde durduruldu.');
+   }else{
+    const elapsed=now-p.start;
+    showText('previewTimer',Math.max(0,Math.ceil((20000-elapsed)/1000))+' sn');
+    if(elapsed>=20000){
+     previewEnd(null,true);
+    }else if(elapsed<5000&&now-p.last>=45){
+     p.rest.push([...v.a]);
+     p.last=now;
+    }
+   }
+  }
   if(state.quick){
    if(!v||document.hidden||g.id!==state.quick.id||g.index!==state.quick.index){
     quickCancel('Kontrolcü değişti veya sekme kapandı. Ölçüm iptal edildi.');
@@ -332,7 +391,7 @@
   }
  }
  function choose(kind){
-  if(state.full||state.quick)return;
+  if(state.full||state.quick||state.preview)return;
   state.kind=kind;state.surveyMode='pending';
   state.data=null;state.uploaded=false;$('deadzone').disabled=false;clearRest();
   $('home').classList.add('hidden');$('test').classList.remove('hidden');
@@ -341,7 +400,7 @@
   refresh();window.scrollTo({top:0,behavior:'instant'});
  }
  function back(){
-  if(state.full||state.quick)return;
+  if(state.full||state.quick||state.preview)return;
   $('home').classList.remove('hidden');$('test').classList.add('hidden');
   state.kind=null;state.data=null;state.fullSamples=[];state.surveyMode='pending';
   window.scrollTo({top:0,behavior:'instant'});
@@ -371,6 +430,8 @@
   }
   updateRest();
  });
+ $('previewBtn').addEventListener('click',previewBegin);
+ $('previewStopBtn').addEventListener('click',()=>previewEnd('Deneme durduruldu; eksik ölçümler saklanmadı.'));
  $('measureBtn').addEventListener('click',measure);
  $('cancelBtn').addEventListener('click',()=>quickCancel('Ölçüm durduruldu.'));
  $('fullTestBtn').addEventListener('click',startFull);
@@ -392,12 +453,14 @@
  $('exportDataBtn').addEventListener('click',download);
  window.addEventListener('gamepadconnected',refresh);
  window.addEventListener('gamepaddisconnected',()=>{
+  if(state.preview)previewEnd('Kontrolcü bağlantısı koptu. Deneme durduruldu.');
   if(state.full)abortFull('Kontrolcü bağlantısı koptu.');
   if(state.quick)quickCancel('Kontrolcü bağlantısı koptu.');
   refresh();
  });
  document.addEventListener('visibilitychange',()=>{
   if(!document.hidden)return;
+  if(state.preview)previewEnd('Sekme gizlendi; deneme durduruldu.');
   if(state.full)abortFull('Sekme gizlendi; kayıt iptal edildi.');
   if(state.quick)quickCancel('Sekme gizlendi; kısa test iptal edildi.');
  });
