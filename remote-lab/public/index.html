@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0d121a">
+  <meta name="description" content="Kontrolcü stick driftini yüzdeyle ölç, deneysel anti-stick drift filtresini canlı karşılaştır.">
+  <title>GuardAdaptive | Stick Drift Testi</title>
+  <link rel="stylesheet" href="/simple.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+<header class="topbar">
+  <div class="logo"><span class="mark">G</span><span>GUARD<span class="accent">ADAPTIVE</span><small>STICK DRIFT TESTİ</small></span></div>
+  <span class="top-label">GAMEPAD LAB · BETA</span>
+</header>
+<main>
+  <section id="home" class="home">
+    <div class="hero"><div class="eyebrow">KONTROLCÜ TESTİ</div><h1>Kolunun durumu nasıl?</h1><p>Birini seç, analogları kontrol et.</p></div>
+    <div class="options" role="group" aria-label="Stick drift durumu">
+      <button type="button" data-kind="none" class="option healthy">
+        <span class="symbol" aria-hidden="true">✓</span><strong>Stick driftsiz kol</strong><span>Drift hissetmiyorum</span><span class="arrow" aria-hidden="true">→</span>
+      </button>
+      <button type="button" data-kind="regular" class="option drift">
+        <span class="symbol" aria-hidden="true">~</span><strong>Stick driftli kol</strong><span>Hafif / orta drift var</span><span class="arrow" aria-hidden="true">→</span>
+      </button>
+      <button type="button" data-kind="severe" class="option severe">
+        <span class="symbol" aria-hidden="true">!</span><strong>Ağır stick driftli kol</strong><span>Yüksek seviyede drift var</span><span class="arrow" aria-hidden="true">→</span>
+      </button>
+    </div>
+    <p class="privacy">Tarayıcından ölçüm yapılır. İznin olmadan veri gönderilmez.</p>
+  </section>
+  <section id="test" class="test hidden" aria-labelledby="testHeading">
+    <div class="test-head"><button id="back" class="back" type="button">← Geri</button><span id="choice" class="choice-label"></span></div>
+    <div class="test-title"><h1 id="testHeading">Stick drift karşılaştırması</h1><p>Kolu bağla, bir tuşuna bas ve analogların ortada bıraktığında ne kadar sapma yaptığını ölç.</p></div>
+    <div class="device-panel">
+      <div class="device-info"><span id="deviceLight" class="light"></span><div><strong id="deviceState">Kontrolcü bekleniyor</strong><p id="deviceNote">USB/Bluetooth ile bağla ve bir tuşa bas.</p></div></div>
+      <label class="device-choose" for="device">Kullanılan kol<select id="device"><option value="">Kontrolcü bulunamadı</option></select></label>
+    </div>
+    <details id="mappingDetails" class="mapping">
+      <summary>Analoglar yanlış hareket ediyorsa eksen eşlemesini değiştir</summary>
+      <p>Standart dışı kontrolcüler için analog eksenlerini seç. Aynı ekseni birden fazla yön için kullanma.</p>
+      <div class="mapping-grid">
+        <label>Sol X<select id="axisLX"></select></label><label>Sol Y<select id="axisLY"></select></label>
+        <label>Sağ X<select id="axisRX"></select></label><label>Sağ Y<select id="axisRY"></select></label>
+      </div>
+      <p id="mappingStatus" class="subtext"></p>
+    </details>
+    <div class="metrics" aria-label="Ölçülen drift yüzdesi">
+      <article class="metric before"><div class="metric-label"><span class="legend raw"></span> FİLTRESİZ (HAM)</div><strong id="rawTotal" class="big-number">--</strong><span id="rawCaption">Boşta drift ölçümü bekleniyor</span></article>
+      <article class="metric after"><div class="metric-label"><span class="legend corrected"></span> ANTİ-STICK DRIFT DENEMESİ</div><strong id="filteredTotal" class="big-number">--</strong><span id="filteredCaption">Filtre simülasyonu; gerçek kolu değiştirmez</span></article>
+    </div>
+    <div class="settings">
+      <label for="deadzone">Deneme filtresi seviyesi <strong id="deadzoneValue">8%</strong></label>
+      <input id="deadzone" type="range" min="0" max="25" value="8" step="1">
+      <p>Filtre merkezi bastırır. Yüzdenin azalması, fiziksel driftin onarıldığı anlamına gelmez.</p>
+    </div>
+    <div class="sticks">
+      <article class="stick" aria-label="Sol analog">
+        <div class="stick-heading"><h2>Sol analog</h2><span id="leftStatus" class="status">Canlı</span></div>
+        <canvas id="leftCanvas" width="260" height="260" role="img" aria-label="Sol analog: ham ve filtreli hareket göstergesi"></canvas>
+        <div class="coords"><span id="leftCoords">X 0.000 · Y 0.000</span></div>
+        <div class="stick-numbers"><div><span>Ham konum</span><strong id="leftLiveRaw">--</strong></div><div><span>Filtreli konum</span><strong id="leftLiveFiltered">--</strong></div></div>
+        <p class="drift-line">Boşta drift: <b id="leftRestRaw">--</b> → deneme: <b id="leftRestFiltered">--</b></p>
+      </article>
+      <article class="stick" aria-label="Sağ analog">
+        <div class="stick-heading"><h2>Sağ analog</h2><span id="rightStatus" class="status">Canlı</span></div>
+        <canvas id="rightCanvas" width="260" height="260" role="img" aria-label="Sağ analog: ham ve filtreli hareket göstergesi"></canvas>
+        <div class="coords"><span id="rightCoords">X 0.000 · Y 0.000</span></div>
+        <div class="stick-numbers"><div><span>Ham konum</span><strong id="rightLiveRaw">--</strong></div><div><span>Filtreli konum</span><strong id="rightLiveFiltered">--</strong></div></div>
+        <p class="drift-line">Boşta drift: <b id="rightRestRaw">--</b> → deneme: <b id="rightRestFiltered">--</b></p>
+      </article>
+    </div>
+    <div class="measure">
+      <div><strong id="measureTitle">Driftini ölç</strong><p id="measureMessage" role="status" aria-live="polite">İki analogu da bırak. 5 saniye boyunca hiçbirine dokunmadan bekle.</p></div>
+      <div class="measure-buttons"><span id="timer">5 sn</span><button type="button" id="measureBtn" class="primary">Boştaki drifti ölç (5 sn)</button><button type="button" id="cancelBtn" class="secondary hidden">Durdur</button></div>
+    </div>
+    <section class="full-test" aria-labelledby="fullTestHeading">
+      <strong id="fullTestHeading">Tam kontrolcü testi ve veri kaydı</strong>
+      <p>6 adım boyunca sol/sağ analogları bırak, küçük hareketler yap ve tam tur döndür. Tarayıcının gördüğü bütün eksen ve tuş değerleri; aynı örneklerden hesaplanan anti-drift çıkışıyla beraber hazırlanır. Sunucuya otomatik gönderilmez.</p>
+      <p id="phaseTitle" class="step-indicator">Henüz başlamadı · 6 adım</p>
+      <p id="phaseMessage" role="status">Her adım 12 saniye ölçüm ve 3 saniye hazırlık içerir.</p>
+      <label class="checkline"><input id="testAck" type="checkbox"><span>Tarayıcıdaki kontrolcü verilerimin ölçüm boyunca belleğe alınacağını anladım. Kontrolcüyü sabit tutmam gereken aşamalarda analoglara dokunmayacağım.</span></label>
+      <div class="test-buttons"><button id="fullTestBtn" class="primary" type="button">Tam testi başlat</button><button id="fullStopBtn" type="button" class="secondary hidden">Testi iptal et</button></div>
+    </section>
+    <section id="surveyPrompt" class="survey-prompt hidden">
+      <h2>Test tamamlandı! Anketi doldurur musunuz?</h2>
+      <p>Stick drift ve filtre denemesi sırasında nelerin iyi veya kötü olduğunu bizimle paylaşabilirsiniz. Yorum zorunlu değil.</p>
+      <div class="survey-buttons"><button id="surveyYes" class="primary" type="button">Evet, anketi doldurayım</button><button id="surveyNo" class="secondary" type="button">Anketi geç</button></div>
+    </section>
+    <section id="surveySection" class="survey-section hidden" aria-label="Kontrolcü test anketi">
+      <h2>Deneyimini değerlendir</h2>
+      <p>Filtre yalnız ekrandaki simülasyondur; oyundaki performansı değiştirmez. Cevaplarını gördüğün karşılaştırmaya göre ver.</p>
+      <div class="survey-grid">
+        <label>Filtreli görselleştirme ne kadar faydalıydı?
+          <select id="surveyBenefit"><option value="">Seç</option><option value="0">0 - Faydası olmadı</option><option value="1">1</option><option value="2">2</option><option value="3">3 - Orta</option><option value="4">4</option><option value="5">5 - Çok faydalı</option></select>
+        </label>
+        <label>Küçük hareketlerin kaybolduğunu gördün mü?
+          <select id="surveyInterference"><option value="">Seç</option><option value="never">Hayır</option><option value="sometimes">Bazen</option><option value="often">Sık sık</option><option value="unsure">Kararsızım</option></select>
+        </label>
+        <label>En çok nerede sorun gördün?
+          <select id="surveyProblem"><option value="">Seç</option><option value="none">Sorun yok</option><option value="center">Merkezde</option><option value="small_move">Küçük hareketlerde</option><option value="diagonal">Çapraz hareketlerde</option><option value="full_sweep">Tam tur hareketinde</option><option value="other">Diğer</option></select>
+        </label>
+        <label>Hangi analogda?
+          <select id="surveyAffected"><option value="">Seç</option><option value="none">Hiçbiri</option><option value="left">Sol</option><option value="right">Sağ</option><option value="both">İkisi</option></select>
+        </label>
+        <label>Filtreli noktada gecikme veya takılma gördün mü?
+          <select id="surveyLag"><option value="">Seç</option><option value="none">Hayır</option><option value="slight">Biraz</option><option value="high">Belirgin</option><option value="unsure">Emin değilim</option></select>
+        </label>
+        <label>Genel test deneyimine puanın
+          <select id="surveyRating"><option value="">Seç</option><option value="1">1 / 5</option><option value="2">2 / 5</option><option value="3">3 / 5</option><option value="4">4 / 5</option><option value="5">5 / 5</option></select>
+        </label>
+      </div>
+      <label for="surveyComment">Ek yorumun (isteğe bağlı, en çok 500 karakter)</label>
+      <textarea id="surveyComment" rows="4" maxlength="500" placeholder="Kontrolü hangi hareketlerde kaybettin, hangi filtre oranı daha iyiydi? İsim, iletişim bilgisi veya şifre yazma."></textarea>
+    </section>
+    <section id="finishSection" class="survey-section hidden">
+      <h2>Test verilerin hazır</h2>
+      <p>Ham eksenler, tuş değerleri, filtreli analog sonuçları ve istersen anket cevabın tek bir oturumda saklanır. Gönderim yalnızca aşağıdaki izninle yapılır; otomatik bir yükleme yoktur.</p>
+      <label class="checkline"><input id="dataConsent" type="checkbox"><span>Ölçüm, filtreli sonuç ve varsa anket yanıtlarımın anonim araştırma amacıyla work-pc sunucusunda 30 gün tutulmasına izin veriyorum. Kişisel bilgi içeren yorum yazmayacağım.</span></label>
+      <div class="survey-buttons"><button id="sendDataBtn" type="button" class="primary" disabled>Verileri ve anketi gönder</button><button id="exportDataBtn" type="button" class="secondary">JSON indir (sunucuya gönderme)</button></div>
+      <p id="sendStatus" class="feedback" role="status" aria-live="polite"></p>
+    </section>
+    <p class="explanation"><span class="legend raw"></span> Turuncu nokta: koldan gelen gerçek tarayıcı verisi. <span class="legend corrected"></span> Yeşil nokta: sanal filtreden sonraki hesaplanan konum. Hareket ederken gördüğün yüzde <strong>anlık analog konumu</strong>; drift yüzdesi yalnız 5 saniyelik bırakma testinden hesaplanır.</p>
+    <p class="footnote">Ölçüm: √(X² + Y²) × 100; merkezden sapmanın tam hareket aralığına oranı. Oyunlara müdahale edilmez. Tarayıcının Gamepad API değerleri ölçülür, ham donanım sensörü değil.</p>
+  </section>
+</main>
+<footer class="footer">GuardAdaptive · Browser-only controller test · Production BLOCKED</footer>
+</body></html>

@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0a1222">
+<title>GuardAdaptive | Anti-Drift Karşılaştırma Laboratuvarı</title>
+<meta name="description" content="Kontrolcü analog driftini ölç; deneysel filtreyle sanal karşılaştırma veya gerçek önce/sonra testini gönüllü olarak kaydet.">
+<link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/compare.css">
+<script src="/compare.js" defer></script>
+</head>
+<body>
+<header class="compare-header wrap">
+<a href="/" class="back-link">← Remote Lab ana sayfa</a>
+<span class="pill">GA-RL-02 / ARAŞTIRMA</span>
+<a href="/admin-studies" class="back-link">Karşılaştırma kayıtları</a>
+</header>
+<main class="wrap">
+<section class="compare-hero">
+<p class="eyebrow">CONTROLLED DRIFT RESEARCH / BEFORE & AFTER</p>
+<h1>Anti-drift gerçekten <em>işe yarıyor mu?</em></h1>
+<p>Önce analogunun ham verisini kaydet. Sonra aynı ölçüme uygulanan <strong>deneysel sanal filtrenin</strong> sonucunu incele veya kendi anti-drift yazılımını açıp ikinci bir gerçek tarayıcı ölçümü al. Küçük, kasıtlı hareket kayıplarını da göreceksin.</p>
+<div class="warning"><strong>Bilimsel uyarı:</strong> Buradaki sanal filtre, Naveax bilgisayarındaki orijinal GuardAdaptive modeli değildir. Gamepad API oyunlara gönderilen girdileri değiştirmez. Sanal sonuç fiziksel düzeltme kanıtı değildir; elle yapılan iki ayrı test ise katılımcı beyanına dayanır.</div>
+</section>
+<section class="cmp-grid">
+<div class="cmp-primary">
+<article class="panel">
+<div class="panelhead"><h3>1. Deney türü ve kontrolcü</h3><span id="connection" class="pill">Cihaz bekleniyor</span></div>
+<div class="cmp-fields">
+<div class="full"><label for="device">Kontrolcü</label><select id="device"><option value="">Henüz algılanmadı</option></select></div>
+<div class="full"><label for="mode">Anti-drift karşılaştırma yöntemi</label>
+<select id="mode"><option value="simulation">Deneysel sanal filtre, aynı ham kayıt üzerinde</option><option value="manual_external">Kendi anti-drift yazılımımı elle açıp ikinci ölçüm</option></select></div>
+<div><label for="family">Kontrolcü ailesi</label><select id="family"><option value="">Seç</option><option value="xbox">Xbox</option><option value="playstation">PlayStation</option><option value="nintendo">Nintendo</option><option value="generic">PC / Diğer</option><option value="other">Bilinmeyen</option></select></div>
+<div><label for="condition">Mevcut durum</label><select id="condition"><option value="">Seç</option><option value="drift">Stick drift var</option><option value="severe">Ağır stick drift var</option><option value="healthy">Drift yok</option><option value="unknown">Bilmiyorum</option></select></div>
+<div><label for="transport">Bağlantı</label><select id="transport"><option value="">Seç</option><option value="usb">USB / kablolu</option><option value="bluetooth">Bluetooth</option><option value="unknown">Bilinmiyor</option></select></div>
+</div>
+<div class="compare-explainer" id="modeHelp">Sanal filtre yalnız ölçülen X/Y sayılarına uygulanır; oyundaki kontrolcüyü veya fiziksel driftini değiştirmez.</div>
+<div class="stick-live">
+<div><span>SOL ANALOG</span><strong id="leftCurrent">0.000</strong><canvas id="leftLive" width="240" height="240"></canvas><small id="leftAxes">X 0.000 · Y 0.000</small></div>
+<div><span>SAĞ ANALOG</span><strong id="rightCurrent">0.000</strong><canvas id="rightLive" width="240" height="240"></canvas><small id="rightAxes">X 0.000 · Y 0.000</small></div>
+</div>
+</article>
+<article class="panel">
+<div class="panelhead"><h3>2. Kontrol edilen test aşamaları</h3><span id="phaseCounter" class="pill">0/6</span></div>
+<div class="track"><div id="progressFill"></div></div>
+<div class="run-head"><div><span id="runLabel">Önce: filtresiz ham veri</span><h3 id="phaseName">Ölçüme hazır</h3></div><strong id="secondsLeft">00:00</strong></div>
+<p class="muted" id="phaseDesc">Her aşamada 12 saniye örnek alınır ve 3 saniye hazırlık süresi verilir. Test sırasında sekmeyi değiştirmeyin.</p>
+<div class="phase-tags"><span>Sol bırak</span><span>Sol hassas</span><span>Sol tam tur</span><span>Sağ bırak</span><span>Sağ hassas</span><span>Sağ tam tur</span></div>
+<label class="compare-check"><input type="checkbox" id="researchAck"><span>Yönergeleri olabildiğince doğru uygulayacağımı; bu kayıtların fiziksel niyet kanıtı veya kesin tanı olmadığını anlıyorum.</span></label>
+<div class="compare-actions">
+<button id="startBefore" class="primary" type="button">Filtresiz ölçümü başlat →</button>
+<button id="stop" class="secondary" type="button" disabled>Testi iptal et</button>
+</div>
+<p role="status" id="message" class="feedback" aria-live="polite">Kontrolcünü bağla ve bir düğmesine bas.</p>
+</article>
+<article id="afterPanel" class="panel hidden">
+<h3>3. Anti-drift karşılaştırması</h3>
+<div id="simulationControls">
+<p class="muted">Aşağıdaki filtre yalnız tarayıcıda tutulan ham ölçüme uygulanır. Orijinal GuardAdaptive algoritması değildir.</p>
+<label for="deadzone">Deneysel radyal deadzone: <strong id="deadzoneValue">8.0%</strong></label>
+<input type="range" id="deadzone" min="0" max="0.25" step="0.005" value="0.08">
+</div>
+<div id="manualControls" class="hidden">
+<p class="muted">Kendi anti-drift yazılımını/ayarını şimdi etkinleştir. Web sitesi bunu senin yerine açamaz veya doğrulayamaz. Aynı fiziksel kontrolcüyle aynı altı aşamayı tekrar yap.</p>
+<label class="compare-check"><input type="checkbox" id="externalAck"><span>İkinci test için kendi anti-drift yöntemimi manuel olarak etkinleştirdim ve aynı kontrolcüyü kullanıyorum (kişisel beyan).</span></label>
+<button id="startAfter" type="button" class="primary">Filtre açıkken ikinci ölçümü başlat →</button>
+</div>
+<div id="comparison" class="hidden">
+<div class="compare-results">
+<div class="result-card"><div>SOL STICK</div><table><tbody id="leftReport"></tbody></table><p id="leftFinding" class="finding"></p></div>
+<div class="result-card"><div>SAĞ STICK</div><table><tbody id="rightReport"></tbody></table><p id="rightFinding" class="finding"></p></div>
+</div>
+<p id="comparisonCaution" class="warning"></p>
+</div>
+</article>
+<article id="surveyPanel" class="panel hidden">
+<h3>4. Gönüllü deneyim anketi</h3>
+<p class="muted">Kişisel bilgi veya açık uçlu açıklama istemiyoruz. Yanıtlar deney ve ölçümlerle birlikte araştırma için saklanabilir; doğrulanmış fiziksel başarı sayılmaz.</p>
+<div class="cmp-fields">
+<div><label for="severity">Drift şiddeti (senin değerlendirmen, 0–10)</label><select id="severity"><option value="">Seç</option><option value="0">0 / hiç yok</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5 / orta</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10 / aşırı</option></select></div>
+<div><label for="usage">Hangi kullanımda sorun yaşanıyor?</label><select id="usage"><option value="">Seç</option><option value="aim">FPS / nişan alma</option><option value="steering">Direksiyon / yön verme</option><option value="camera">Kamera kontrolü</option><option value="menu">Menüler</option><option value="mixed">Birden fazla</option><option value="not_tried">Denemedim</option></select></div>
+<div><label for="impact">Drift oyunu ne kadar etkiliyor?</label><select id="impact"><option value="">Seç</option><option value="none">Etki yok</option><option value="small">Az</option><option value="medium">Orta</option><option value="severe">Ciddi</option><option value="unplayable">Oynanamaz</option><option value="unknown">Emin değilim</option></select></div>
+<div class="manualSurvey hidden"><label for="effect">Gerçek oyunda anti-drift sonucu nasıldı?</label><select id="effect"><option value="">Seç</option><option value="better">Daha iyi</option><option value="same">Değişmedi</option><option value="worse">Daha kötü</option><option value="not_tested">Oyunda denemedim</option><option value="unsure">Emin değilim</option></select></div>
+<div class="manualSurvey hidden"><label for="motion">Küçük ve bilinçli hareketler etkilendi mi?</label><select id="motion"><option value="">Seç</option><option value="preserved">Korundu</option><option value="partly_lost">Bir kısmı kayboldu</option><option value="lost">Önemli ölçüde kayboldu</option><option value="not_tested">Oyunda denemedim</option><option value="unsure">Emin değilim</option></select></div>
+<div><label for="recommend">Bu yöntemi günlük oyunda kullanır mısın?</label><select id="recommend"><option value="">Seç</option><option value="yes">Evet</option><option value="no">Hayır</option><option value="unsure">Bilmiyorum</option><option value="not_tested">Denemedim</option></select></div>
+</div>
+<label class="compare-check"><input type="checkbox" id="uploadConsent"><span>Filtresiz ham ölçüm, simülasyon veya ikinci ölçüm verileri ve işaretlediğim anket yanıtlarının Work PC sunucusuna anonim araştırma verisi olarak gönderilmesine ayrıca izin veriyorum.</span></label>
+<label class="compare-check"><input type="checkbox" id="selfReportAck"><span>Simülasyonun gerçek anti-drift başarısını göstermediğini ve kendi beyanlarımın bağımsız doğrulama olmadığını kabul ediyorum.</span></label>
+<div class="compare-actions">
+<button id="download" type="button" class="secondary">Kayıtları JSON olarak indir ↓</button>
+<button id="send" type="button" class="primary" disabled>Verileri ve anketi gönüllü gönder ↗</button>
+</div>
+<p id="uploadStatus" class="feedback" role="status" aria-live="polite"></p>
+</article>
+</div>
+<aside class="cmp-aside">
+<div class="panel">
+<p class="eyebrow">NASIL OKUMALI?</p><h3>Yalnız sapma azalması yeterli değil.</h3>
+<p class="muted">Filtre deadzone artırırsa serbest konumdaki X/Y merkez uzaklığı düşebilir, fakat istediğin küçük hareketler de kesilebilir. İki durumu aynı anda gösteriyoruz.</p>
+<div class="aside-stat"><span>Önce / sonra merkez sapması</span><strong>RMS</strong></div>
+<div class="aside-stat"><span>Kasıtlı hareketin kaybı</span><strong>%</strong></div>
+<div class="aside-stat"><span>Bağımsız fiziksel doğrulama</span><strong>YOK</strong></div>
+<hr>
+<h3>Gerçek ile sanal farkı</h3>
+<p class="muted"><b>Sanal filtre:</b> aynı ham örneklerin yazılımsal dönüşümü. Kontrolcünü düzeltmez.</p>
+<p class="muted"><b>Elle önce/sonra:</b> kendi anti-drift aracını açarsın, iki ayrı ölçüm alırsın. Sonuçlar aynı cihazda yapılsa bile gerçek niyetin bağımsız kanıtı değildir.</p>
+<p class="muted">Hiçbir ölçüm üretim GuardAdaptive modelini otomatik etkinleştirmez.</p>
+</div>
+</aside>
+</section>
+</main>
+<footer class="wrap foot">GuardAdaptive Remote Lab / GA-RL-02 · Gönüllü araştırma · Girdi değiştirmez · Production BLOCKED</footer>
+</body></html>

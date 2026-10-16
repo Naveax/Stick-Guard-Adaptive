@@ -1,0 +1,17 @@
+# Private research data and credentials never belong in Git.
+.env
+.env.*
+!.env.example
+**/node_modules/
+**/target/
+**/data/
+**/sessions/
+**/private/
+**/backup-*/
+**/*.log
+**/*.pid
+**/admin-token.txt
+**/admin-token.json
+*.local.*
+.DS_Store
+Thumbs.db
