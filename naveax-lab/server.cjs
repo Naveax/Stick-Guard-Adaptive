@@ -19,6 +19,7 @@ const ASSETS = new Map([
   ['/app.js',['app.js','text/javascript; charset=utf-8']],
   ['/idle-quality.js',['idle-quality.js','text/javascript; charset=utf-8']],
   ['/neutral-preview.js',['neutral-preview.js','text/javascript; charset=utf-8']],
+  ['/neutral-evidence-v87.js',['neutral-evidence-v87.js','text/javascript; charset=utf-8']],
   ['/neutral-ui.js',['neutral-ui.js','text/javascript; charset=utf-8']],
   ['/admin.css',['admin.css','text/css; charset=utf-8']],
   ['/admin.js',['admin.js','text/javascript; charset=utf-8']]
@@ -162,7 +163,7 @@ function startServer(options={}){
     try {
       if(req.method === 'GET' && ASSETS.has(url)){
         const [file,type]=ASSETS.get(url);
-        const root=simpleUi && ['/', '/styles.css', '/app.js', '/idle-quality.js', '/neutral-preview.js', '/neutral-ui.js'].includes(url) ? SIMPLE_PUBLIC : PUBLIC;
+        const root=simpleUi && ['/', '/styles.css', '/app.js', '/idle-quality.js', '/neutral-preview.js', '/neutral-evidence-v87.js', '/neutral-ui.js'].includes(url) ? SIMPLE_PUBLIC : PUBLIC;
         const f=path.join(root,file);
         const buf=await fsp.readFile(f);
         res.writeHead(200,{'Content-Type':type,'Content-Length':buf.length,

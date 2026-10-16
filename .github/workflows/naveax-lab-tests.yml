@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   node-tests:
-    name: Naveax Node.js tests (22)
+    name: Naveax Node.js tests (30)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -27,6 +27,7 @@ jobs:
           node --check server.cjs
           node --check public-simple/app.js
           node --check public-simple/neutral-ui.js
+          node --check public-simple/neutral-evidence-v87.js
           node --check public-simple/neutral-preview.js
           node --check public-simple/idle-quality.js
           node --check tools/replay-v86-input.cjs

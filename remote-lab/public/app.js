@@ -12,7 +12,7 @@
  ];
  const state={
   kind:null,selected:null,axisKey:null,axes:[0,1,2,3],mappingMode:'standard',
-  quick:null,quickSamples:[],preview:null,neutral:null,neutralCandidate:null,full:false,fullCancelled:false,fullPhase:-1,
+  quick:null,quickSamples:[],preview:null,neutral:null,neutralCandidate:null,neutralEvidence:null,full:false,fullCancelled:false,fullPhase:-1,
   fullStarted:0,phaseStarted:0,fullResolver:null,fullLast:-1,fullSamples:[],
   fullDevice:null,fullAxesCount:0,fullButtonsCount:0,fullDeadzone:8,
   data:null,surveyMode:'pending',uploaded:false,restSample:null,restSeparate:null
@@ -225,7 +225,8 @@
  }
  function calibFinish(message, keepCandidate=false){
   state.neutral=null;
-  if(!keepCandidate)state.neutralCandidate=null;
+  if(!keepCandidate){state.neutralCandidate=null;state.neutralEvidence=null;}
+  $('calibDownloadBtn').disabled=!state.neutralEvidence;
   $('calibBtn').disabled=false;
   $('calibBtn').textContent='1. nötr ölçümünü başlat (5 sn)';
   $('calibCancelBtn').classList.add('hidden');
@@ -258,6 +259,7 @@
    return;
   }
   state.neutralCandidate=null;
+  state.neutralEvidence=null;$('calibDownloadBtn').disabled=true;
   state.neutral={
    stage:'first',start:performance.now(),last:-1,samples:[],first:null,firstCenters:null,
    moved:[false,false],id:v.g.id,index:v.g.index,count:capacity(v.g),
@@ -307,6 +309,14 @@
       if(!review.ok){
        calibFinish('Kalibrasyon reddedildi ('+review.reason+'). İki boşta ölçüm uyuşmadı veya kararsız.');
       }else{
+       const evidence=window.GuardAdaptiveEvidenceV87?.build({
+        first:n.first,second:n.samples,moved:n.moved,axesCount:n.count
+       });
+       if(!evidence?.ok){
+        calibFinish('Kalibrasyon verisi güvenli şekilde hazırlanamadı.');
+        return;
+       }
+       state.neutralEvidence=evidence.data;
        state.neutralCandidate={
         id:n.id,index:n.index,signature:n.axisSignature,count:n.count,centers:review.centers
        };
@@ -322,7 +332,8 @@
   const candidate=state.neutralCandidate;
   if(candidate&&(!v||v.g.id!==candidate.id||v.g.index!==candidate.index||
      state.axes.join(',')!==candidate.signature||capacity(v.g)!==candidate.count)){
-   state.neutralCandidate=null;
+   state.neutralCandidate=null;state.neutralEvidence=null;
+   $('calibDownloadBtn').disabled=true;
    showText('calibMessage','Kontrolcü/eşleme değişti; eski kalibrasyon önizlemesi kaldırıldı.');
   }
   const c=state.neutralCandidate;
@@ -333,6 +344,16 @@
    showText('calib'+name+'Fixed',r?r.fixedPct.toFixed(2)+'%':'--');
    showText('calib'+name+'Center',r?r.centerOnlyPct.toFixed(2)+'%':'--');
   }
+ }
+ function downloadNeutralEvidence(){
+  if(!state.neutralEvidence||state.neutral||!state.neutralCandidate)return;
+  const reviewed=window.GuardAdaptiveEvidenceV87?.check(state.neutralEvidence);
+  if(!reviewed?.ok){calibFinish('Yerel kanıt verisi geçersiz; indirme iptal edildi.');return;}
+  const url=URL.createObjectURL(new Blob([JSON.stringify(reviewed.record,null,2)],{type:'application/json'}));
+  const a=document.createElement('a');
+  a.href=url;a.download='guardadaptive-neutral-evidence-v87.json';
+  document.body.append(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1200);
  }
  function measure(){
   if(state.quick||state.full||state.preview||state.neutral)return;
@@ -527,7 +548,7 @@
  }
  function choose(kind){
   if(state.full||state.quick||state.preview||state.neutral)return;
-  state.neutralCandidate=null;
+  state.neutralCandidate=null;state.neutralEvidence=null;$('calibDownloadBtn').disabled=true;
   state.kind=kind;state.surveyMode='pending';
   state.data=null;state.uploaded=false;$('deadzone').disabled=false;clearRest();
   $('home').classList.add('hidden');$('test').classList.remove('hidden');
@@ -537,17 +558,17 @@
  }
  function back(){
   if(state.full||state.quick||state.preview||state.neutral)return;
-  state.neutralCandidate=null;
+  state.neutralCandidate=null;state.neutralEvidence=null;$('calibDownloadBtn').disabled=true;
   $('home').classList.remove('hidden');$('test').classList.add('hidden');
   state.kind=null;state.data=null;state.fullSamples=[];state.surveyMode='pending';
   window.scrollTo({top:0,behavior:'instant'});
  }
  document.querySelectorAll('[data-kind]').forEach(b=>b.addEventListener('click',()=>choose(b.dataset.kind)));
  $('back').addEventListener('click',back);
- $('device').addEventListener('change',e=>{if(state.full||state.quick||state.neutral)return;state.neutralCandidate=null;state.selected=e.target.value;mapping(chosen());clearRest();refresh();});
+ $('device').addEventListener('change',e=>{if(state.full||state.quick||state.neutral)return;state.neutralCandidate=null;state.neutralEvidence=null;$('calibDownloadBtn').disabled=true;state.selected=e.target.value;mapping(chosen());clearRest();refresh();});
  AXIS_IDS.forEach((id,i)=>$(id).addEventListener('change',()=>{
   if(state.full||state.quick||state.neutral)return;
-  state.neutralCandidate=null;
+  state.neutralCandidate=null;state.neutralEvidence=null;$('calibDownloadBtn').disabled=true;
   state.axes[i]=Number($(id).value);state.mappingMode='custom';
   showText('mappingStatus',mapped(chosen())?'Özel eksen düzeni seçildi.':
     'Geçersiz eşleme: sol/sağ yönlere farklı eksenler seç.');
@@ -569,6 +590,7 @@
   updateRest();
  });
  $('calibBtn').addEventListener('click',calibBegin);
+ $('calibDownloadBtn').addEventListener('click',downloadNeutralEvidence);
  $('calibCancelBtn').addEventListener('click',()=>calibFinish('Kalibrasyon kullanıcı tarafından iptal edildi.'));
  $('previewBtn').addEventListener('click',previewBegin);
  $('previewStopBtn').addEventListener('click',()=>previewEnd('Deneme durduruldu; eksik ölçümler saklanmadı.'));
@@ -594,7 +616,7 @@
  window.addEventListener('gamepadconnected',refresh);
  window.addEventListener('gamepaddisconnected',()=>{
   if(state.neutral)calibFinish('Kontrolcü bağlantısı koptu; kalibrasyon iptal edildi.');
-  state.neutralCandidate=null;
+  state.neutralCandidate=null;state.neutralEvidence=null;$('calibDownloadBtn').disabled=true;
   if(state.preview)previewEnd('Kontrolcü bağlantısı koptu. Deneme durduruldu.');
   if(state.full)abortFull('Kontrolcü bağlantısı koptu.');
   if(state.quick)quickCancel('Kontrolcü bağlantısı koptu.');
@@ -603,7 +625,7 @@
  document.addEventListener('visibilitychange',()=>{
   if(!document.hidden)return;
   if(state.neutral)calibFinish('Sekme gizlendi; kalibrasyon iptal edildi.');
-  state.neutralCandidate=null;
+  state.neutralCandidate=null;state.neutralEvidence=null;$('calibDownloadBtn').disabled=true;
   if(state.preview)previewEnd('Sekme gizlendi; deneme durduruldu.');
   if(state.full)abortFull('Sekme gizlendi; kayıt iptal edildi.');
   if(state.quick)quickCancel('Sekme gizlendi; kısa test iptal edildi.');

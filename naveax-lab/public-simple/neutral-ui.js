@@ -6,7 +6,7 @@
  if(!api)return;
  const controls=['startBtn','previewBtn','controllerSelect','backBtn','axisLX','axisLY','axisRX','axisRY'];
  let stage='idle',first=[],second=[],centers=null,moved=[false,false],started=0,last=-1,
-     selectedId='',selectedIndex=-1,count=0,signature='',candidate=null;
+     selectedId='',selectedIndex=-1,count=0,signature='',candidate=null,evidenceData=null;
  function gamepad(){
   try{
    const selected=$('controllerSelect').value;
@@ -37,7 +37,8 @@
  function reset(msg,retain=false){
   const wasBusy=stage==='first'||stage==='move'||stage==='second';
   stage='idle';first=[];second=[];centers=null;moved=[false,false];
-  if(!retain)candidate=null;
+  if(!retain){candidate=null;evidenceData=null;}
+  $('neutralDownloadBtn').disabled=!evidenceData;
   if(wasBusy)setBusy(false);
   $('neutralStartBtn').disabled=false;
   $('neutralStartBtn').textContent='1. nötr ölçümünü başlat (5 sn)';
@@ -58,7 +59,8 @@
   if($('startBtn').disabled||$('previewStopBtn').disabled===false)return say('Önce devam eden testi tamamla.');
   const p=gamepad(),r=read(p);
   if(!r||document.hidden)return say('Kontrolcü/eşleme geçersiz veya sekme gizli. Kontrolcünün bir tuşuna basıp yeniden dene.');
-  candidate=null;stage='first';first=[];second=[];moved=[false,false];
+  candidate=null;evidenceData=null;$('neutralDownloadBtn').disabled=true;
+  stage='first';first=[];second=[];moved=[false,false];
   selectedId=p.id;selectedIndex=p.index;count=r.c;signature=r.key;
   started=performance.now();last=-1;
   setBusy(true);
@@ -109,8 +111,13 @@
       const res=api.review(first,second,moved,count);
       if(!res.ok)reset('Kalibrasyon reddedildi ('+res.reason+'). Nötr ölçümler uyuşmuyor.');
       else{
-       candidate={id:selectedId,index:selectedIndex,signature,count,centers:res.centers};
-       reset('İki gözlemsel nötr ölçüm uyuştu. Merkez karşılaştırması etkin, fiziksel bırakma doğrulanmadı.',true);
+       const evidence=window.GuardAdaptiveEvidenceV87?.build({first,second,moved,axesCount:count});
+       if(!evidence?.ok){reset('Yerel nötr veri doğrulanamadı; yeniden dene.');}
+       else{
+        evidenceData=evidence.data;
+        candidate={id:selectedId,index:selectedIndex,signature,count,centers:res.centers};
+        reset('İki gözlemsel nötr ölçüm uyuştu. Anonim veri isteğe bağlı indirilebilir. Fiziksel bırakma doğrulanmadı.',true);
+       }
       }
      }
     }else if(now-last>=45){
@@ -121,15 +128,26 @@
    }
   }
   if(candidate&&(!p||!r||p.id!==candidate.id||p.index!==candidate.index||r.key!==candidate.signature||r.c!==candidate.count)){
-   candidate=null;say('Kontrolcü veya eşleme değişti. Önceki merkez karşılaştırması kaldırıldı.');
+   candidate=null;evidenceData=null;$('neutralDownloadBtn').disabled=true;say('Kontrolcü veya eşleme değişti. Önceki merkez karşılaştırması kaldırıldı.');
   }
   compare(r);
   requestAnimationFrame(frame);
  }
+ function downloadEvidence(){
+  if(stage!=='idle'||!candidate||!evidenceData)return;
+  const verified=window.GuardAdaptiveEvidenceV87?.check(evidenceData);
+  if(!verified?.ok){reset('Yerel nötr veri geçersiz; indirme iptal edildi.');return;}
+  const url=URL.createObjectURL(new Blob([JSON.stringify(verified.record,null,2)],{type:'application/json'}));
+  const link=document.createElement('a');
+  link.href=url;link.download='guardadaptive-neutral-evidence-v87.json';
+  document.body.append(link);link.click();link.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1200);
+ }
  $('neutralStartBtn').addEventListener('click',start);
+ $('neutralDownloadBtn').addEventListener('click',downloadEvidence);
  $('neutralStopBtn').addEventListener('click',()=>reset('Kalibrasyon iptal edildi; eksik örnekler kullanılmadı.'));
- document.addEventListener('visibilitychange',()=>{if(document.hidden){if(stage!=='idle')reset('Sekme gizlendi; ölçüm iptal edildi.');candidate=null;}});
- window.addEventListener('gamepaddisconnected',()=>{if(stage!=='idle')reset('Kontrolcü ayrıldı; ölçüm iptal edildi.');candidate=null;});
- window.GuardAdaptiveNeutralUI=Object.freeze({busy:()=>stage!=='idle',clear:()=>{if(stage==='idle')candidate=null;}});
+ document.addEventListener('visibilitychange',()=>{if(document.hidden){if(stage!=='idle')reset('Sekme gizlendi; ölçüm iptal edildi.');candidate=null;evidenceData=null;$('neutralDownloadBtn').disabled=true;}});
+ window.addEventListener('gamepaddisconnected',()=>{if(stage!=='idle')reset('Kontrolcü ayrıldı; ölçüm iptal edildi.');candidate=null;evidenceData=null;$('neutralDownloadBtn').disabled=true;});
+ window.GuardAdaptiveNeutralUI=Object.freeze({busy:()=>stage!=='idle',clear:()=>{if(stage==='idle'){candidate=null;evidenceData=null;$('neutralDownloadBtn').disabled=true;}}});
  requestAnimationFrame(frame);
 })();

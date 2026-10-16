@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="/styles.css">
   <script src="/idle-quality.js" defer></script>
   <script src="/neutral-preview.js" defer></script>
+  <script src="/neutral-evidence-v87.js" defer></script>
   <script src="/app.js" defer></script>
   <script src="/neutral-ui.js" defer></script>
 </head>
@@ -102,7 +103,7 @@
             <div class="panel-heading"><h2 id="neutralTitle">İki aşamalı nötr kalibrasyon</h2><span class="step-marker">ÖNİZLEME</span></div>
             <p class="section-lede">Önce iki analogu bırakıp 5 saniye ölç, sonra ikisini bilinçli hareket ettir. Tekrar bırakıp ikinci 5 saniyelik ölçümü başlat. İki merkez uyuşmazsa sonuç reddedilir.</p>
             <p class="section-lede">Bu yalnızca tarayıcıda merkez çıkarma denemesidir. Gerçek bırakma doğrulanamaz, oyundaki kontrolcü girdisi değişmez ve hiçbir ölçüm bu bölümden sunucuya gönderilmez.</p>
-            <div class="button-row"><button type="button" id="neutralStartBtn" class="btn btn-primary">1. nötr ölçümünü başlat (5 sn)</button><button id="neutralStopBtn" type="button" class="btn btn-secondary" disabled>İptal et</button><strong id="neutralTimer">Hazır</strong></div>
+            <div class="button-row"><button type="button" id="neutralStartBtn" class="btn btn-primary">1. nötr ölçümünü başlat (5 sn)</button><button id="neutralDownloadBtn" type="button" class="btn btn-secondary" disabled>Anonim nötr JSON indir</button><button id="neutralStopBtn" type="button" class="btn btn-secondary" disabled>İptal et</button><strong id="neutralTimer">Hazır</strong></div>
             <p id="neutralMessage" class="feedback" role="status" aria-live="polite">Başlamak için kolunu bağla ve bir kategori seç.</p>
             <div class="neutral-comparison">
               <div><b>Analog</b><b>Ham</b><b>%12 deadzone</b><b>Merkez çıkarma</b></div>

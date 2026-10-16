@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="/simple.css">
   <script src="/idle-quality.js" defer></script>
   <script src="/neutral-preview.js" defer></script>
+  <script src="/neutral-evidence-v87.js" defer></script>
   <script src="/app.js" defer></script>
 </head>
 <body>
@@ -75,6 +76,7 @@
       <p>Önemli: Tarayıcı analoga gerçekten dokunmadığını doğrulayamaz. Bu yalnızca sanal merkez çıkarma karşılaştırmasıdır; oyuna uygulanmaz ve sunucuya gönderilmez.</p>
       <div class="calibration-actions">
         <button type="button" id="calibBtn" class="primary">1. nötr ölçümünü başlat (5 sn)</button>
+        <button type="button" id="calibDownloadBtn" class="secondary" disabled>Nötr veriyi JSON indir</button>
         <button type="button" id="calibCancelBtn" class="secondary hidden">İptal et</button>
         <strong id="calibTimer">Hazır</strong>
       </div>
@@ -84,6 +86,7 @@
         <div><span>Sol</span><span id="calibLeftRaw">--</span><span id="calibLeftFixed">--</span><span id="calibLeftCenter">--</span></div>
         <div><span>Sağ</span><span id="calibRightRaw">--</span><span id="calibRightFixed">--</span><span id="calibRightCenter">--</span></div>
       </div>
+      <p>İndirme yalnızca sen butona bastığında gerçekleşir. Dosya kişisel tanımlayıcı içermez; fiziksel nötr doğrulanmış sayılmaz ve otomatik eğitimde kullanılmaz.</p>
       <p id="calibDisclaimer">Son sütun ancak iki nötr ölçüm uygun bulununca gösterilir. Değerler anlık analog konumudur, kanıtlanmış kalan drift değildir. %0,9 garantisi verilmez.</p>
     </section>
     <div class="sticks">
