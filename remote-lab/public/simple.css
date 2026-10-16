@@ -9,3 +9,18 @@
 .preview-actions button{min-height:46px;padding:10px 16px;white-space:normal}
 #previewTimer{font-variant-numeric:tabular-nums;white-space:nowrap}
 @media(max-width:760px){.preview-panel{flex-direction:column;align-items:stretch}.preview-actions{justify-content:flex-start}.preview-actions button{flex:1}}
+
+/* v0.86 isolated, consent-based two-window neutral preview. */
+.calibration-panel{margin:18px 0 22px;padding:21px;background:#192c36;border:1px solid #3a7480;border-radius:16px}
+.calibration-panel h2{font-size:19px;margin:0 0 10px}
+.calibration-panel p{font-size:13px;color:#afc7d3;line-height:1.55;margin:9px 0}
+.calibration-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:16px 0}
+.calibration-actions button{min-height:45px}
+#calibTimer{color:#9be8ed;font-variant-numeric:tabular-nums}
+#calibMessage{color:#a9e0dc;font-weight:650}
+.calib-results{margin-top:14px;overflow:auto;border:1px solid #375564;border-radius:10px}
+.calib-results>div{display:grid;grid-template-columns:repeat(4,minmax(108px,1fr));padding:10px 12px;gap:10px;border-bottom:1px solid #304555;font-size:13px;min-width:430px}
+.calib-results>div:first-child{background:#14232c;color:#b7d6df;font-size:11px}
+.calib-results>div:last-child{border-bottom:0}
+.calib-results>div>*:last-child{color:#80e8cd;font-weight:750}
+@media(max-width:760px){.calibration-actions button{flex:1}.calibration-panel{padding:14px}}
