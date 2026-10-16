@@ -1,0 +1,9 @@
+data/
+.env
+.env.*
+logs/
+*.pem
+*.key
+*.pfx
+node_modules/
+*.zip

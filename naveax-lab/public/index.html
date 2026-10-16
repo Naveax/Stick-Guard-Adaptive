@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080e1d">
+  <meta name="description" content="GuardAdaptive Remote Lab: kontrolcü analog driftini tarayıcıda güvenli ve gönüllü olarak ölçün. Program kurulumu gerekmez.">
+  <title>GuardAdaptive | Remote Lab</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <div class="backdrop" aria-hidden="true"></div>
+  <header class="site-header">
+    <a class="brand" href="#top" aria-label="GuardAdaptive Remote Lab ana sayfa">
+      <span class="brand-glyph">G<span class="brand-pulse">·</span></span>
+      <span><strong>GUARD<span class="brand-soft">ADAPTIVE</span></strong><small>REMOTE LAB / BETA</small></span>
+    </a>
+    <nav aria-label="Ana gezinme">
+      <a href="#how">Nasıl çalışır?</a><a href="#lab">Test laboratuvarı</a><a href="#privacy">Gizlilik</a>
+    </nav>
+    <span class="header-pill"><span class="alive-dot"></span> Araştırma sürümü</span>
+  </header>
+
+  <main id="top">
+    <section class="hero content-width">
+      <div class="hero-copy">
+        <div class="eyebrow"><span class="eyebrow-dot"></span> CROWDSOURCED CONTROLLER RESEARCH <span class="eyebrow-line"></span> V0.1</div>
+        <h1>Drift'i anlamak için<br><span class="gradient-ink">aynı şehirde</span><br>olmamız gerekmiyor.</h1>
+        <p class="hero-lede">Kontrolcünü bilgisayarına bağla, analog testini tarayıcıdan yap. Ölçümleri incele, istersen araştırmaya katkıda bulun. Kurulum yok. Uzaktan kontrol yok.</p>
+        <div class="hero-actions">
+          <a href="#lab" class="primary-link">Teste başla <span aria-hidden="true">↗</span></a>
+          <a href="#how" class="quiet-link">Sistem nasıl çalışır? <span aria-hidden="true">→</span></a>
+        </div>
+        <div class="hero-facts">
+          <span><b>01</b> Uygulama kurulumu yok</span>
+          <span><b>02</b> Açık onay olmadan aktarım yok</span>
+          <span><b>03</b> Analog değerleri değiştirilmez</span>
+        </div>
+      </div>
+      <div class="hero-visual" aria-hidden="true">
+        <div class="grid-floor"></div>
+        <div class="signal-tag tag-top"><span class="alive-dot"></span> INPUT OBSERVATION</div>
+        <div class="controller-wrap">
+          <svg class="controller-art" viewBox="0 0 550 330" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="body" x1="104" y1="60" x2="460" y2="288" gradientUnits="userSpaceOnUse"><stop stop-color="#243455"/><stop offset=".47" stop-color="#16233D"/><stop offset="1" stop-color="#0D172B"/></linearGradient>
+              <linearGradient id="edge" x1="130" y1="20" x2="440" y2="293" gradientUnits="userSpaceOnUse"><stop stop-color="#647DAD"/><stop offset="1" stop-color="#20314D"/></linearGradient>
+              <radialGradient id="glow"><stop stop-color="#5DC8FF" stop-opacity=".5"/><stop offset="1" stop-color="#5DC8FF" stop-opacity="0"/></radialGradient>
+            </defs>
+            <ellipse cx="278" cy="195" rx="235" ry="137" fill="url(#glow)" opacity=".28"/>
+            <path d="M172 75C190 60 213 54 245 54H305C337 54 360 60 379 75L438 72C467 74 488 95 502 127L537 234C548 272 527 300 493 297C466 295 450 280 431 254L380 196H170L118 254C99 280 84 295 57 297C23 300 2 272 14 234L48 127C62 95 82 74 112 72L172 75Z" fill="url(#body)" stroke="url(#edge)" stroke-width="4"/>
+            <path d="M168 75C197 90 221 95 275 95C329 95 352 90 380 75" stroke="#354966" stroke-width="3"/>
+            <path d="M195 53L208 33C216 24 335 24 343 33L356 53" stroke="#3B526F" stroke-width="9" stroke-linecap="round"/>
+            <circle cx="180" cy="185" r="53" fill="#0A1223" stroke="#415879" stroke-width="5"/><circle cx="180" cy="185" r="37" fill="#1A2B45" stroke="#6480A6" stroke-width="3"/><circle cx="180" cy="185" r="17" fill="#263E5D" stroke="#75D9FC" stroke-width="4"/>
+            <circle cx="339" cy="230" r="49" fill="#0A1223" stroke="#415879" stroke-width="5"/><circle cx="339" cy="230" r="34" fill="#1A2B45" stroke="#6480A6" stroke-width="3"/><circle cx="339" cy="230" r="16" fill="#263E5D" stroke="#75D9FC" stroke-width="4"/>
+            <rect x="105" y="103" width="26" height="78" rx="7" fill="#101E35" stroke="#6B83A6" stroke-width="3"/><rect x="79" y="129" width="78" height="26" rx="7" fill="#101E35" stroke="#6B83A6" stroke-width="3"/>
+            <circle cx="398" cy="133" r="16" fill="#1B3047" stroke="#74E1C7" stroke-width="3"/><circle cx="438" cy="169" r="16" fill="#1B3047" stroke="#E9A3DE" stroke-width="3"/><circle cx="358" cy="169" r="16" fill="#1B3047" stroke="#97AEFF" stroke-width="3"/><circle cx="398" cy="207" r="16" fill="#1B3047" stroke="#FFCE87" stroke-width="3"/>
+            <path d="M260 137H290" stroke="#5F759A" stroke-width="10" stroke-linecap="round"/><circle cx="275" cy="168" r="13" fill="#2C3E60" stroke="#839DD0" stroke-width="2"/>
+            <path d="M80 80L118 70M432 70L469 80" stroke="#739FD7" stroke-opacity=".65" stroke-width="3"/>
+            <circle cx="180" cy="185" r="71" stroke="#64D9F6" stroke-opacity=".35" stroke-dasharray="6 10" stroke-width="2"/>
+            <circle cx="339" cy="230" r="67" stroke="#64D9F6" stroke-opacity=".35" stroke-dasharray="6 10" stroke-width="2"/>
+          </svg>
+        </div>
+        <div class="signal-tag tag-left"><span class="signal-square"></span> LEFT STICK<span class="tag-value">X / Y</span></div>
+        <div class="signal-tag tag-right"><span class="signal-square purple"></span> RIGHT STICK<span class="tag-value">X / Y</span></div>
+        <div class="hero-visual-bottom"><span>ANALOG TELEMETRY</span><span>NO INPUT INJECTION</span><span>LAB 001</span></div>
+      </div>
+    </section>
+
+    <section class="stats-band">
+      <div class="content-width stat-row">
+        <div><span class="stat-symbol">↗</span><strong>6</strong><small>Rehberli test aşaması</small></div>
+        <div><span class="stat-symbol">◉</span><strong>2</strong><small>Analog stick incelenir</small></div>
+        <div><span class="stat-symbol">◎</span><strong>~90 sn</strong><small>Test ve hazırlık süresi</small></div>
+        <div><span class="stat-symbol">▱</span><strong>0</strong><small>Gerekli uygulama</small></div>
+      </div>
+    </section>
+
+    <section id="how" class="section content-width how">
+      <div class="section-head"><span class="kicker">01 / ÇALIŞMA PRENSİBİ</span><h2>Sen test et.<br><span class="muted">Biz veriyi analiz edelim.</span></h2><p>Her katılımcı kendi bilgisayarında aynı protokolü uygular. Ham eksen örnekleri ancak gönüllü paylaşım seçilirse aktarılır.</p></div>
+      <div class="how-grid">
+        <article class="how-item"><span class="how-index">01</span><div class="how-icon">⌁</div><h3>Kontrolcüyü bağla</h3><p>USB veya Bluetooth ile bilgisayarına bağla. Tarayıcıdan kontrolcünün bir düğmesine basarak algılanmasını sağla.</p></article>
+        <article class="how-item"><span class="how-index">02</span><div class="how-icon">◌</div><h3>Yönlendirmeleri takip et</h3><p>Stick'leri serbest bırakma, küçük hareket ve tam tur aşamalarını uygula. Tüm analog ölçümleri yerel olarak kaydedilir.</p></article>
+        <article class="how-item"><span class="how-index">03</span><div class="how-icon">↗</div><h3>Sonucu kontrol et</h3><p>Sol ve sağ analogun serbest konumdaki sapma ölçülerini incele. Veriyi JSON olarak indir veya açık onayla gönder.</p></article>
+      </div>
+    </section>
+
+    <section id="lab" class="section lab-section content-width">
+      <div class="section-head"><span class="kicker">02 / REMOTE LAB</span><h2>Analog test istasyonu<span class="headline-period">.</span></h2><p>Bu test kontrolcüyü kalibre etmez; yalnızca tarayıcının bildirdiği analog eksen değerlerini kaydeder.</p></div>
+      <div class="lab-layout">
+        <div class="lab-main">
+          <div class="panel device-panel">
+            <div class="panel-heading"><div><span class="section-mini">DEVICE LINK</span><h3>Kontrolcü bağlantısı</h3></div><span id="deviceBadge" class="pill warn"><span class="dot"></span> Bekleniyor</span></div>
+            <div id="compatNotice" class="notice" role="status">Kontrolcünü bağla ve bir tuşa bas. Bazı tarayıcılar cihazı ancak sayfa odaktayken gösterir.</div>
+            <label for="controllerSelect">Algılanan kontrolcü</label>
+            <select id="controllerSelect" aria-label="Kontrolcü seç"><option value="">Henüz kontrolcü algılanmadı</option></select>
+            <div class="device-meta">
+              <span>Okuma: <strong id="mappingText">-</strong></span>
+              <span>Eksen: <strong id="axesCount">-</strong></span>
+              <span>Örnekleme: <strong id="fpsText">-</strong></span>
+            </div>
+            <div class="sticks-grid">
+              <div class="stick-box">
+                <div class="stick-heading"><span>SOL ANALOG</span><strong id="leftValue">0.000</strong></div>
+                <canvas id="leftCanvas" width="300" height="300" aria-label="Sol analog pozisyon grafiği" role="img"></canvas>
+                <div class="axis-nums"><span id="lxValue">X 0.000</span><span id="lyValue">Y 0.000</span></div>
+              </div>
+              <div class="stick-box">
+                <div class="stick-heading"><span>SAĞ ANALOG</span><strong id="rightValue">0.000</strong></div>
+                <canvas id="rightCanvas" width="300" height="300" aria-label="Sağ analog pozisyon grafiği" role="img"></canvas>
+                <div class="axis-nums"><span id="rxValue">X 0.000</span><span id="ryValue">Y 0.000</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel test-panel">
+            <div class="panel-heading"><div><span class="section-mini">GUIDED PROTOCOL / GA-RL-01</span><h3>Yönlendirmeli kayıt</h3></div><span id="stepMarker" class="progress-count">0 / 6</span></div>
+            <div class="progress-track"><div id="progressFill" class="progress-fill"></div></div>
+            <div class="phase-header"><span id="phaseIcon" class="phase-icon">◎</span><div><span class="phase-label">AKTİF AŞAMA</span><h4 id="phaseTitle">Teste hazır</h4></div><strong id="timer">00:00</strong></div>
+            <p id="phaseDescription" class="phase-description">Testi başlatmadan önce kontrolcüyü ve bilgileri seç. Hazır olduğunda her aşama için yönergeler ekranda gösterilecek.</p>
+            <div class="phase-steps" id="phaseSteps" aria-label="Test aşamaları">
+              <span>Sol serbest</span><span>Sol hassas</span><span>Sol tur</span><span>Sağ serbest</span><span>Sağ hassas</span><span>Sağ tur</span>
+            </div>
+            <div class="form-grid">
+              <div><label for="family">Kontrolcü ailesi</label><select id="family"><option value="">Seçiniz</option><option value="xbox">Xbox</option><option value="playstation">PlayStation</option><option value="nintendo">Nintendo</option><option value="generic">PC / Genel</option><option value="other">Diğer</option></select></div>
+              <div><label for="condition">Kontrolcünün durumu</label><select id="condition"><option value="">Seçiniz</option><option value="drift">Drift var</option><option value="healthy">Sağlam / drift yok</option><option value="unknown">Emin değilim</option></select></div>
+              <div><label for="transport">Bağlantı</label><select id="transport"><option value="">Seçiniz</option><option value="usb">USB / kablolu</option><option value="bluetooth">Bluetooth</option><option value="unknown">Bilmiyorum</option></select></div>
+            </div>
+            <label class="consent-line"><input id="ackConsent" type="checkbox"><span>Bu araştırmanın kontrollü bir tanı olmadığını ve yönergeleri mümkün olduğunca doğru uygulayacağımı anlıyorum.</span></label>
+            <div class="test-controls">
+              <button id="startBtn" class="btn btn-primary" type="button">Ölçümü başlat <span>→</span></button>
+              <button id="stopBtn" class="btn btn-ghost" type="button" disabled>Testi durdur</button>
+            </div>
+            <p id="testMessage" class="inline-feedback" role="status" aria-live="polite">Hazır olduğunda testi başlatabilirsin.</p>
+          </div>
+
+          <div id="resultPanel" class="panel result-panel hidden">
+            <div class="panel-heading"><div><span class="section-mini">LOCAL RESULTS</span><h3>Ölçüm özeti</h3></div><span class="pill ok">Yerel analiz</span></div>
+            <div class="result-grid">
+              <div><span>Sol analog / serbest</span><strong id="leftRms">-</strong><small>RMS merkez uzaklığı</small></div>
+              <div><span>Sağ analog / serbest</span><strong id="rightRms">-</strong><small>RMS merkez uzaklığı</small></div>
+              <div><span>Toplam örnek</span><strong id="sampleCount">-</strong><small>Tarayıcıdan alınan eksen ölçümleri</small></div>
+            </div>
+            <p class="result-note">RMS değeri tanı değildir. Stick'in gerçekten serbest bırakıldığını tarayıcı doğrulayamaz; bu durum yalnız katılımcı yönergesiyle belirlenir.</p>
+            <div class="transfer-bar"><button id="exportBtn" type="button" class="btn btn-secondary">JSON verisini indir ↓</button><span id="uploadStatus" class="transfer-status"></span></div>
+            <label class="consent-line upload-consent"><input id="uploadConsent" type="checkbox"><span>Bu ölçümün anonim araştırma verisi olarak sunucuya yüklenmesine açıkça izin veriyorum. Kontrolcü kimliği ve IP adresi veri dosyasına kaydedilmez.</span></label>
+            <button id="uploadBtn" class="btn btn-primary" disabled type="button">Ölçümü gönüllü gönder <span>↗</span></button>
+          </div>
+        </div>
+
+        <aside class="lab-aside">
+          <div class="aside-card guidelines">
+            <span class="kicker">TEST ÖNCESİ</span>
+            <h3>Sağlıklı ölçüm için</h3>
+            <div class="guideline"><span class="guideline-check">✓</span><p>Kontrolcüyü düz bir zeminde tut veya rahat bir şekilde sabitle.</p></div>
+            <div class="guideline"><span class="guideline-check">✓</span><p>Serbest bırakma aşamasında ilgili analoglara dokunma.</p></div>
+            <div class="guideline"><span class="guideline-check">✓</span><p>Test sırasında sekmeyi açık ve görünür tut.</p></div>
+            <div class="guideline"><span class="guideline-check">✓</span><p>Oyun, emülatör veya gamepad ayar programlarını kapatman önerilir.</p></div>
+            <div class="aside-rule"></div>
+            <div class="notice-small">Ölçüm tarayıcının standart eksenlerini kullanır. Bazı kontrolcüler farklı eksen dizilimi gösterebilir; desteklenmeyen cihazlar için kayıt başlatılmaz.</div>
+          </div>
+          <div class="aside-card insight">
+            <div class="insight-orbit">◎</div>
+            <span class="kicker">RESEARCH INSIGHT</span>
+            <h3>Önemli olan yalnız sapma değil.</h3>
+            <p>Drift ile küçük, kasıtlı stick hareketini ayırt etmek için hem serbest konumu hem kontrollü hareketleri örnekliyoruz.</p>
+            <span class="insight-foot">VERİ ≠ FİZİKSEL NİYET KANITI</span>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="privacy" class="section privacy-section content-width">
+      <div><span class="kicker">03 / GİZLİLİK & GÜVENLİK</span><h2>Kontrol sende.<br><span class="muted">Veri de öyle.</span></h2></div>
+      <div class="privacy-items">
+        <div><span class="privacy-icon">⟐</span><h3>Varsayılan olarak yerel</h3><p>Ölçümler test tamamlanana kadar yalnız tarayıcı belleğinde tutulur. Siteyi kapatırsan kayıt kaybolur.</p></div>
+        <div><span class="privacy-icon">⊘</span><h3>Uzaktan kumanda yok</h3><p>Hiçbir oyun girdisi gönderilmez veya değiştirilmez. Kamera, mikrofon ve konum izni istenmez.</p></div>
+        <div><span class="privacy-icon">↳</span><h3>İstediğinde paylaş</h3><p>JSON dosyasını indirebilir veya ayrıca onay verip yükleyebilirsin. Sunucu kabul ederse kayıtlar en fazla 30 gün saklanır.</p></div>
+      </div>
+    </section>
+  </main>
+  <footer class="footer content-width"><div class="footer-brand">G<span>·</span> GUARDADAPTIVE <small>REMOTE RESEARCH LAB</small></div><p>Bu platform araştırma amaçlıdır. Kontrolcü driftini otomatik düzeltmez, onarım veya güvenli model kabulü iddiasında bulunmaz.</p><span>© GuardAdaptive / LAB BETA</span></footer>
+</body>
+</html>

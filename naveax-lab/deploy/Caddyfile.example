@@ -1,0 +1,12 @@
+# TEMPLATE ONLY. Use only when Caddy is the intended HTTPS 443 owner.
+# Do not conflict with existing nginx / Xray / ReVoltVPN at :443.
+lab.example.org {
+    encode zstd gzip
+    log {
+        output discard
+    }
+    reverse_proxy 127.0.0.1:48927 {
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+    }
+}

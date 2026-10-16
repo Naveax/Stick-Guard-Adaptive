@@ -1,0 +1,34 @@
+name: Naveax Remote Lab tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  node-tests:
+    name: Naveax Node.js tests (22)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: naveax-lab
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify published JavaScript syntax
+        run: |
+          node --check server.cjs
+          node --check public-simple/app.js
+          node --check public-simple/neutral-ui.js
+          node --check public-simple/neutral-preview.js
+          node --check public-simple/idle-quality.js
+          node --check tools/replay-v86-input.cjs
+      - name: Run offline tests
+        run: node --test test/*.test.cjs

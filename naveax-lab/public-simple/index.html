@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1020">
+  <meta name="description" content="Stick drift testi: driftsiz, driftli veya ağır driftli kolunu seç ve tarayıcıda ölç.">
+  <title>GuardAdaptive | Stick Drift Testi</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/idle-quality.js" defer></script>
+  <script src="/neutral-preview.js" defer></script>
+  <script src="/app.js" defer></script>
+  <script src="/neutral-ui.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="brand"><span class="brand-mark">G</span><span>Guard<span class="brand-accent">Adaptive</span><small>STICK DRIFT TESTİ</small></span></div>
+    <span class="beta-label">BETA</span>
+  </header>
+  <main>
+    <section id="choiceScreen" class="screen choice-screen" aria-labelledby="chooseTitle">
+      <div class="intro">
+        <span class="eyebrow">KONTROLCÜ TESTİ</span>
+        <h1 id="chooseTitle">Kolunun durumu nasıl?</h1>
+        <p>Aşağıdan birini seç. Kolunu bağla ve testi başlat.</p>
+      </div>
+      <div class="choice-grid" role="group" aria-label="Kol durumunu seç">
+        <button type="button" class="choice choice-healthy" data-kind="none">
+          <span class="choice-symbol" aria-hidden="true">✓</span>
+          <strong>Stick driftsiz kol</strong><span>Analoglarda sorun yok</span>
+          <span class="choice-arrow" aria-hidden="true">→</span>
+        </button>
+        <button type="button" class="choice choice-drift" data-kind="regular">
+          <span class="choice-symbol" aria-hidden="true">~</span>
+          <strong>Stick driftli kol</strong><span>Hafif veya orta sapma var</span>
+          <span class="choice-arrow" aria-hidden="true">→</span>
+        </button>
+        <button type="button" class="choice choice-severe" data-kind="severe">
+          <span class="choice-symbol" aria-hidden="true">!</span>
+          <strong>Ağır stick driftli kol</strong><span>Belirgin, güçlü sapma var</span>
+          <span class="choice-arrow" aria-hidden="true">→</span>
+        </button>
+      </div>
+      <p class="tiny-note">Program kurmana gerek yok. İznin olmadan ölçüm gönderilmez.</p>
+    </section>
+
+    <section id="testScreen" class="screen test-screen hidden" aria-labelledby="testTitle">
+      <div class="test-top">
+        <button id="backBtn" type="button" class="back-btn">← Kol durumunu değiştir</button>
+        <span id="choiceBadge" class="choice-badge"></span>
+      </div>
+      <h1 id="testTitle">Kolunu bağla, test et</h1>
+      <p class="section-lede">USB veya Bluetooth ile bağla ve bir tuşuna bas. Test boyunca bu sayfayı açık tut.</p>
+      <div class="test-layout">
+        <div class="column">
+          <section class="panel controller-panel">
+            <div class="panel-heading"><h2>Kontrolcü</h2><span id="deviceBadge" class="status-tag">Bağlantı bekleniyor</span></div>
+            <div id="compatNotice" class="notice" role="status">Kontrolcünü bağla ve bir tuşuna bas.</div>
+            <label for="controllerSelect" class="field-label">Kullanılacak kol</label>
+            <select id="controllerSelect" aria-label="Kullanılacak kol"><option value="">Kontrolcü bulunamadı</option></select>
+            <details id="mappingPanel" class="mapping-panel">
+              <summary>Analoglar yanlış çalışıyorsa eşlemeyi değiştir</summary>
+              <p id="mappingHelp" class="mapping-help">Kolu seçtikten sonra sol ve sağ analogların hangi eksenleri kullandığını belirleyebilirsin.</p>
+              <div class="mapping-grid">
+                <label>Sol X<select id="axisLX" aria-label="Sol X ekseni"></select></label>
+                <label>Sol Y<select id="axisLY" aria-label="Sol Y ekseni"></select></label>
+                <label>Sağ X<select id="axisRX" aria-label="Sağ X ekseni"></select></label>
+                <label>Sağ Y<select id="axisRY" aria-label="Sağ Y ekseni"></select></label>
+              </div>
+              <span id="mappingStatus" class="feedback" role="status"></span>
+            </details>
+
+            <div class="sticks-grid">
+              <div class="stick"><h3>Sol analog</h3><canvas id="leftCanvas" width="260" height="260" role="img" aria-label="Sol analog konum grafiği"></canvas><strong id="leftValue">0.000</strong></div>
+              <div class="stick"><h3>Sağ analog</h3><canvas id="rightCanvas" width="260" height="260" role="img" aria-label="Sağ analog konum grafiği"></canvas><strong id="rightValue">0.000</strong></div>
+            </div>
+          </section>
+
+          <section class="panel recording-panel">
+            <div class="panel-heading"><h2>Test</h2><span id="stepMarker" class="step-marker">0 / 6</span></div>
+            <div class="progress-track"><div id="progressFill" class="progress-fill"></div></div>
+            <div class="phase-top"><h3 id="phaseTitle">Başlamaya hazır</h3><strong id="timer">00:00</strong></div>
+            <p id="phaseDescription" class="phase-description">6 kısa adımda sol ve sağ analogları ölçeceğiz.</p>
+            <div id="phaseSteps" class="phase-steps" aria-label="Test aşamaları">
+              <span>Sol serbest</span><span>Sol küçük hareket</span><span>Sol tur</span><span>Sağ serbest</span><span>Sağ küçük hareket</span><span>Sağ tur</span>
+            </div>
+            <label class="check-line"><input id="ackConsent" type="checkbox"><span>Bu testin yalnızca bir ölçüm olduğunu anladım.</span></label>
+            <div class="button-row">
+              <button id="startBtn" type="button" class="btn btn-primary">Testi başlat</button>
+              <button id="stopBtn" type="button" class="btn btn-secondary" disabled>Durdur</button>
+            </div>
+            <p id="testMessage" class="feedback" role="status" aria-live="polite">Kolunu bağladıktan sonra testi başlat.</p>
+          </section>
+
+          <section class="panel preview-entry">
+            <div class="panel-heading"><h2>Anti-stick drift denemesi</h2><span class="step-marker">ÖNİZLEME</span></div>
+            <p class="section-lede">Ham analog hareketi ile basit bir filtre örneğini yan yana karşılaştır. Bu deneme hiçbir oyundaki kontrolü değiştirmez.</p>
+            <button type="button" id="previewBtn" class="btn btn-primary">Anti-stick drift dene (20 sn)</button>
+            <p class="feedback">Gerçek GuardAdaptive düzeltmesi değildir. Kontrollü hareketlerin bastırılıp bastırılmadığını yalnız bu ekranda gözlemleyebilirsin.</p>
+          </section>
+          <section class="panel neutral-panel" aria-labelledby="neutralTitle">
+            <div class="panel-heading"><h2 id="neutralTitle">İki aşamalı nötr kalibrasyon</h2><span class="step-marker">ÖNİZLEME</span></div>
+            <p class="section-lede">Önce iki analogu bırakıp 5 saniye ölç, sonra ikisini bilinçli hareket ettir. Tekrar bırakıp ikinci 5 saniyelik ölçümü başlat. İki merkez uyuşmazsa sonuç reddedilir.</p>
+            <p class="section-lede">Bu yalnızca tarayıcıda merkez çıkarma denemesidir. Gerçek bırakma doğrulanamaz, oyundaki kontrolcü girdisi değişmez ve hiçbir ölçüm bu bölümden sunucuya gönderilmez.</p>
+            <div class="button-row"><button type="button" id="neutralStartBtn" class="btn btn-primary">1. nötr ölçümünü başlat (5 sn)</button><button id="neutralStopBtn" type="button" class="btn btn-secondary" disabled>İptal et</button><strong id="neutralTimer">Hazır</strong></div>
+            <p id="neutralMessage" class="feedback" role="status" aria-live="polite">Başlamak için kolunu bağla ve bir kategori seç.</p>
+            <div class="neutral-comparison">
+              <div><b>Analog</b><b>Ham</b><b>%12 deadzone</b><b>Merkez çıkarma</b></div>
+              <div><span>Sol</span><span id="neutralLeftRaw">--</span><span id="neutralLeftDeadzone">--</span><span id="neutralLeftCenter">--</span></div>
+              <div><span>Sağ</span><span id="neutralRightRaw">--</span><span id="neutralRightDeadzone">--</span><span id="neutralRightCenter">--</span></div>
+            </div>
+            <p class="section-lede">Yüzdeler anlık analog değeridir; %0,9 gerçek drift garantisi değildir. İki kararlı ölçüm, oyuncunun analogu bıraktığını kanıtlamaz.</p>
+          </section>
+          <section id="previewPanel" class="panel hidden" aria-labelledby="previewTitle">
+            <h2 id="previewTitle">Ham hareket / Filtre önizlemesi</h2>
+            <p class="section-lede"><span class="dot-legend raw-dot"></span> Ham hareket <span class="dot-legend filter-dot"></span> Filtrelenmiş hareket. Önce analogları bırak, sonra küçük hareketler ve tam tur yap.</p>
+            <div class="sticks-grid">
+              <div class="stick"><h3>Sol analog</h3><canvas id="previewLeft" width="260" height="260" aria-label="Sol analog filtre karşılaştırması"></canvas></div>
+              <div class="stick"><h3>Sağ analog</h3><canvas id="previewRight" width="260" height="260" aria-label="Sağ analog filtre karşılaştırması"></canvas></div>
+            </div>
+            <div class="button-row preview-controls"><strong id="previewTimer" role="status">20 sn</strong><button id="previewStopBtn" class="btn btn-secondary" type="button" disabled>Denemeyi durdur</button></div>
+            <p id="previewMessage" class="feedback" role="status" aria-live="polite">20 saniyelik ölçümü başlatmak için üstteki butona bas.</p>
+            <div id="surveyPanel" class="hidden">
+              <h3>Denemeyi değerlendir</h3>
+              <p class="section-lede">Aşağıdakileri sadece önizlemeye bakarak yanıtla. Gerçek oyundaki performansı ölçmüyoruz.</p>
+              <div class="survey-grid">
+                <label for="benefit">Sapma ne kadar azalmış gibi göründü?
+                  <select id="benefit"><option value="">Seç</option><option value="0">0 - Hiç</option><option value="1">1 - Çok az</option><option value="2">2 - Biraz</option><option value="3">3 - Orta</option><option value="4">4 - İyi</option><option value="5">5 - Çok iyi</option></select>
+                </label>
+                <label for="interference">İstediğin küçük hareketleri engelledi mi?
+                  <select id="interference"><option value="">Seç</option><option value="never">Hayır</option><option value="sometimes">Bazen</option><option value="often">Sık sık</option></select>
+                </label>
+                <label for="problem">En çok nerede hata gördün?
+                  <select id="problem"><option value="">Seç</option><option value="none">Hata görmedim</option><option value="center">Merkezde</option><option value="small_move">Küçük hareketlerde</option><option value="diagonal">Çapraz hareketlerde</option><option value="full_sweep">Tam tur yaparken</option></select>
+                </label>
+                <label for="affected">Hangi analogda sorun yaşadın?
+                  <select id="affected"><option value="">Seç</option><option value="none">Sorun yok</option><option value="left">Sol</option><option value="right">Sağ</option><option value="both">İkisi de</option></select>
+                </label>
+                <label for="latency">Gecikme veya sert geçiş hissettin mi?
+                  <select id="latency"><option value="">Seç</option><option value="none">Hayır</option><option value="slight">Biraz</option><option value="high">Belirgin</option></select>
+                </label>
+                <label for="rating">Genel önizleme puanın
+                  <select id="rating"><option value="">Seç</option><option value="1">1 / 5</option><option value="2">2 / 5</option><option value="3">3 / 5</option><option value="4">4 / 5</option><option value="5">5 / 5</option></select>
+                </label>
+              </div>
+              <label class="check-line"><input id="previewConsent" type="checkbox"><span>Bu önizlemenin analog ölçümlerinin ve yanıtlarımın araştırma için sunucuya gönderilmesine izin veriyorum. En fazla 30 gün saklanır. Onay vermezsem gönderilmez.</span></label>
+              <div class="button-row">
+                <button id="previewSendBtn" type="button" class="btn btn-primary" disabled>Anketi ve ölçümleri gönder</button>
+                <button id="previewExportBtn" type="button" class="btn btn-secondary">JSON indir</button>
+              </div>
+              <p id="previewSendStatus" class="feedback" role="status" aria-live="polite"></p>
+            </div>
+          </section>
+          <section id="resultPanel" class="panel result-panel hidden" aria-labelledby="resultsTitle">
+            <h2 id="resultsTitle">Test tamamlandı</h2>
+            <div class="result-grid"><div><span>Sol analog RMS</span><strong id="leftRms">-</strong></div><div><span>Sağ analog RMS</span><strong id="rightRms">-</strong></div><div><span>Örnek sayısı</span><strong id="sampleCount">-</strong></div></div>
+            <p id="neutralQualityResult" class="result-note" role="status" aria-live="polite">Boşta ölçüm kalite kontrolü bekleniyor.</p>
+            <p class="result-note">Bu değerler tanı değildir. Analogların gerçekten bırakıldığını tarayıcı doğrulayamaz.</p>
+            <div class="button-row"><button id="exportBtn" class="btn btn-secondary" type="button">Sonucu indir (JSON)</button></div>
+            <label class="check-line"><input id="uploadConsent" type="checkbox"><span>Ölçümümü araştırma amacıyla sunucuya göndermeye izin veriyorum. Kayıtlar en fazla 30 gün saklanır.</span></label>
+            <button id="uploadBtn" class="btn btn-primary" type="button" disabled>Sonucu gönder</button>
+            <p id="uploadStatus" class="feedback" role="status" aria-live="polite"></p>
+          </section>
+        </div>
+        <aside class="help-card"><h2>Nasıl yapılır?</h2><ol><li>Kolunu bağla.</li><li>Testi başlat.</li><li>Ekrandaki hareketleri uygula.</li><li>Sonucu gör.</li></ol><p>Test koluna müdahale etmez ve hiçbir oyun girdisini değiştirmez.</p></aside>
+      </div>
+    </section>
+  </main>
+  <footer class="footer"><span>© GuardAdaptive · Test sürümü</span><span>Ölçümler yalnızca ayrıca onaylarsan gönderilir.</span></footer>
+</body>
+</html>

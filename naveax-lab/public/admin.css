@@ -1,0 +1,25 @@
+.admin-page{min-height:76vh;padding-top:86px;padding-bottom:110px}
+.admin-page .section-head{max-width:770px}
+.admin-auth{max-width:630px}
+.admin-auth input{width:100%;height:50px;background:#0b1626;color:#e4faff;border:1px solid #33465b;border-radius:9px;outline:none;padding:0 15px;font-size:13px;font-family:Consolas,monospace}
+.admin-auth input:focus{border-color:#76deed;box-shadow:0 0 0 3px #70dce423}
+.auth-hint{color:#8199b1;font-size:11px;margin:14px 0 22px;line-height:1.7}
+.admin-toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:5px 0 22px}
+.admin-toolbar strong{font-size:36px;color:#8deaf3;line-height:1}
+.admin-toolbar span{font-size:12px;color:#94aabd;margin-left:8px}
+.admin-buttons{display:flex;gap:8px}
+.admin-tip{padding:14px 17px;color:#9eb3cc;border-left:3px solid #50b8ce;background:#12263a;font-size:12px;line-height:1.75}
+.table-outer{border:1px solid #2c3a52;border-radius:12px;overflow-x:auto;background:#111b2e}
+.record-table{border-collapse:collapse;width:100%;min-width:880px;font-size:12px}
+.record-table th{background:#182a42;color:#88afc4;text-align:left;letter-spacing:.6px;font-size:10px;font-weight:800;padding:16px}
+.record-table td{border-top:1px solid #26384f;padding:14px 16px;color:#bfd1e5}
+.record-table tr:hover td{background:#172940}
+.record-table td strong{color:#8eebef;font-weight:800}
+.record-table td:nth-child(1){font-family:Consolas,monospace;font-size:11px;color:#8099af}
+.record-table button{background:#1b334c;border:1px solid #365575;border-radius:6px;padding:7px 11px;color:#bde4f4;font-size:11px;cursor:pointer;margin-right:7px}
+.record-table button.danger{background:#39212b;border-color:#744657;color:#f4bac6}
+.record-table button:disabled{opacity:.4;cursor:not-allowed}
+.empty-records{padding:32px;text-align:center;color:#89a1b7}
+@media(max-width:550px){.admin-page{padding-top:49px}.admin-buttons{flex-wrap:wrap}.admin-toolbar strong{font-size:28px}.admin-toolbar{align-items:flex-start}}
+
+#previewAdminPanel{margin-top:36px}

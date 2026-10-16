@@ -1,0 +1,16 @@
+{
+  "name": "guardadaptive-remote-lab",
+  "version": "0.1.6",
+  "private": true,
+  "description": "Opt-in passive gamepad drift research laboratory",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node server.cjs",
+    "test": "node --test test/*.test.cjs",
+    "review": "node review-sessions.cjs",
+    "check": "node --check server.cjs && node --check preview.cjs && node --check validate.cjs && node --check public/app.js && node --check public-simple/app.js && node --check public/admin.js"
+  },
+  "license": "UNLICENSED"
+}

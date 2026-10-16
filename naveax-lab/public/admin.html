@@ -1,0 +1,35 @@
+<!doctype html><html lang="tr"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#080e1d"><meta name="robots" content="noindex,nofollow">
+<title>GuardAdaptive | Araştırma Yönetimi</title>
+<link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/admin.css">
+<script src="/admin.js" defer></script>
+</head><body><div class="backdrop"></div>
+<header class="site-header"><a class="brand" href="/"><span class="brand-glyph">G<span class="brand-pulse">·</span></span><span><strong>GUARD<span class="brand-soft">ADAPTIVE</span></strong><small>RESEARCH CONSOLE / PRIVATE</small></span></a>
+<nav><a href="/">Katılımcı sayfasına dön ↗</a></nav><span class="header-pill">ADMIN ACCESS</span></header>
+<main class="content-width admin-page">
+ <div class="section-head"><span class="kicker">REMOTE LAB / DATA OPERATIONS</span><h2>Ölçüm kayıtları<span class="headline-period">.</span></h2><p>Anonim araştırma oturumlarını incele, ham veriyi dışa aktar veya kalıcı olarak sil. Sunucu erişim anahtarını tarayıcıda saklamıyoruz.</p></div>
+ <section class="panel admin-auth" id="loginPanel"><div class="panel-heading"><div><span class="section-mini">PRIVATE RESEARCH ACCESS</span><h3>Yönetici doğrulaması</h3></div><span class="pill warn">Kilitli</span></div>
+ <label for="adminToken">Sunucu yönetici anahtarı</label>
+ <input type="password" id="adminToken" autocomplete="off" spellcheck="false" placeholder="REMOTE_LAB_ADMIN_TOKEN">
+ <p class="auth-hint">En az 32 karakterlik anahtar. Yalnız bu sekmenin belleğinde tutulur; URL’ye veya yerel depolamaya yazılmaz.</p>
+ <button class="btn btn-primary" type="button" id="loginBtn">Kayıtları görüntüle →</button>
+ <p role="status" id="loginFeedback" class="inline-feedback"></p></section>
+ <section id="recordsPanel" class="hidden">
+  <div class="admin-toolbar"><div><strong id="recordCount">0</strong> <span>ölçüm oturumu</span></div><div class="admin-buttons"><button id="refreshBtn" class="btn btn-secondary" type="button">Yenile ↻</button><button id="logoutBtn" class="btn btn-ghost" type="button">Erişimi kapat</button></div></div>
+  <p class="admin-tip">Bu kayıtlar katılımcı beyanına dayalıdır. Fiziksel stick bırakma, gerçek niyet veya model güvenliği kanıtı değildir. Kayıtlar 30 gün sonra otomatik temizlenir.</p>
+  <div class="table-outer"><table class="record-table"><thead><tr><th>Kayıt</th><th>Kol tipi</th><th>Beyan</th><th>Sol RMS</th><th>Sağ RMS</th><th>Örnek</th><th>Kalite uyarısı</th><th>İşlemler</th></tr></thead><tbody id="recordsBody"></tbody></table></div>
+  <p id="recordsFeedback" role="status" class="inline-feedback"></p>
+  <div id="previewAdminPanel" class="hidden">
+    <h3>Anti-stick drift önizleme anketleri</h3>
+    <p class="admin-tip">Bu yanıtlar yalnız tarayıcıdaki filtre önizlemesine aittir. Gerçek oyun davranışı veya model güvenliği kanıtlanmamıştır.</p>
+    <div class="table-outer"><table class="record-table">
+      <thead><tr><th>Kayıt</th><th>Drift</th><th>Fayda</th><th>Hareket engeli</th><th>Hata alanı</th><th>Gecikme</th><th>Puan</th><th>İşlemler</th></tr></thead>
+      <tbody id="previewRecordsBody"></tbody>
+    </table></div>
+    <p id="previewRecordsFeedback" role="status" class="inline-feedback"></p>
+  </div>
+ </section>
+</main>
+<footer class="footer content-width"><div class="footer-brand">G<span>·</span> GUARDADAPTIVE<small>RESEARCH ACCESS</small></div><p>Üretim drift algoritmasına otomatik aktarım yok. Yönetici anahtarını kimseyle paylaşma.</p><span>PRIVATE / GA-RL-01</span></footer>
+</body></html>
