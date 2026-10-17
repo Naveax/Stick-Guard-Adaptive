@@ -42,6 +42,8 @@ pub enum CenterError {
 #[derive(Clone, Copy, Debug, Default)]
 pub struct UnknownDriftMetrics {
     pub ambiguous_stable_reports: u64,
+    /// Counts distinct alert episodes rather than every repeated frame.
+    pub ambiguous_episode_starts: u64,
     pub reference_updates: u64,
     pub unverified_center_updates: u64,
     pub restored_old_reference: u64,
@@ -57,6 +59,7 @@ pub struct UnknownDriftObserver {
     previous_raw: Option<Vec2>,
     plateau_anchor: Option<Vec2>,
     plateau_frames: u32,
+    currently_ambiguous: bool,
     plateau_start_ms: Option<u64>,
     last_timestamp_ms: Option<u64>,
     last_mode_timed: Option<bool>,
@@ -80,6 +83,7 @@ impl UnknownDriftObserver {
         self.previous_raw = None;
         self.plateau_anchor = None;
         self.plateau_frames = 0;
+        self.currently_ambiguous = false;
         self.plateau_start_ms = None;
     }
 
@@ -146,6 +150,17 @@ impl UnknownDriftObserver {
     }
 
     fn observe_internal(&mut self, raw: Vec2, now: Option<u64>) -> Observation {
+        // Validate sensor bytes before any clock/error branch can emit output.
+        if !raw.finite() || raw.x.abs() > 1.0 || raw.y.abs() > 1.0 {
+            self.clear_plateau();
+            self.metrics.invalid_samples = self.metrics.invalid_samples.saturating_add(1);
+            return Observation {
+                output: Vec2::ZERO,
+                alert: Alert::InvalidInput,
+                suspected_center: None,
+                active_center: self.center,
+            };
+        }
         let timed = now.is_some();
         if self
             .last_mode_timed
@@ -181,17 +196,6 @@ impl UnknownDriftObserver {
         } else {
             self.last_timestamp_ms = None;
         }
-        if !raw.finite() || raw.x.abs() > 1.0 || raw.y.abs() > 1.0 {
-            self.clear_plateau();
-            self.metrics.invalid_samples = self.metrics.invalid_samples.saturating_add(1);
-            return Observation {
-                output: Vec2::ZERO,
-                alert: Alert::InvalidInput,
-                suspected_center: None,
-                active_center: self.center,
-            };
-        }
-
         let stable = self
             .previous_raw
             .is_some_and(|p| (raw - p).norm() <= STABLE_DELTA_MAX)
@@ -221,6 +225,11 @@ impl UnknownDriftObserver {
         };
         let ambiguous =
             self.center.is_some() && stable_enough && measured_deviation >= ALERT_ABOVE_CENTER;
+        if ambiguous && !self.currently_ambiguous {
+            self.metrics.ambiguous_episode_starts =
+                self.metrics.ambiguous_episode_starts.saturating_add(1);
+        }
+        self.currently_ambiguous = ambiguous;
         if ambiguous {
             self.metrics.ambiguous_stable_reports =
                 self.metrics.ambiguous_stable_reports.saturating_add(1);
@@ -619,6 +628,89 @@ mod tests {
         assert_eq!(g.metrics().unverified_center_updates, 0);
         assert_eq!(g.metrics().reference_updates, 1);
         assert_eq!(g.metrics().timestamp_anomalies, 0);
+    }
+
+    #[test]
+    fn invalid_axis_takes_priority_over_duplicate_or_regressed_timestamps() {
+        let mut g = UnknownDriftObserver::new();
+        g.accept_reacquisition(reference(Vec2::new(0.02, -0.01)))
+            .unwrap();
+        let valid = Vec2::new(0.03, -0.02);
+        assert_eq!(g.observe_at(valid, 100).alert, Alert::Quiet);
+        for bad in [Vec2::new(2.0, 0.0), Vec2::new(f64::NAN, 0.0)] {
+            let result = g.observe_at(bad, 100);
+            assert_eq!(result.alert, Alert::InvalidInput);
+            assert_eq!(result.output, Vec2::ZERO);
+            assert!(result.suspected_center.is_none());
+        }
+        assert_eq!(g.metrics().invalid_samples, 2);
+        assert_eq!(g.metrics().timestamp_anomalies, 0);
+        assert_eq!(g.observe_at(valid, 101).alert, Alert::Quiet);
+        assert_eq!(g.metrics().unverified_center_updates, 0);
+    }
+
+    #[test]
+    fn timed_observer_keeps_finite_unit_bounds_near_u64_overflow() {
+        let mut g = UnknownDriftObserver::new();
+        g.accept_reacquisition(reference(Vec2::new(-0.01, 0.02)))
+            .unwrap();
+        let raw = Vec2::new(0.06, -0.04);
+        for t in (u64::MAX - 1_100)..=u64::MAX {
+            let result = g.observe_at(raw, t);
+            assert!(result.output.finite());
+            assert!(result.output.x.abs() <= 1.0);
+            assert!(result.output.y.abs() <= 1.0);
+            assert!(result.active_center.is_some());
+            assert_ne!(result.alert, Alert::InvalidTimestamp);
+        }
+        assert_eq!(g.metrics().timestamp_anomalies, 0);
+    }
+
+    #[test]
+    fn long_ambiguous_plateau_counts_one_episode_without_automatic_correction() {
+        let mut g = UnknownDriftObserver::new();
+        g.accept_reacquisition(reference(Vec2::ZERO)).unwrap();
+        let held = Vec2::new(0.085, -0.04);
+        for i in 0..20_000_u64 {
+            let result = g.observe_at(held, i * 4);
+            assert!((result.output - held).norm() < 0.00001);
+        }
+        assert_eq!(g.metrics().ambiguous_episode_starts, 1);
+        assert!(g.metrics().ambiguous_stable_reports > 1_000);
+        assert_eq!(g.metrics().unverified_center_updates, 0);
+        // A meaningful excursion ends the old observation episode.
+        assert_eq!(g.observe_at(Vec2::ZERO, 80_001).alert, Alert::Quiet);
+        for i in 1..260_u64 {
+            let result = g.observe_at(held, 80_001 + i * 4);
+            assert!((result.output - held).norm() < 0.00001);
+        }
+        assert_eq!(g.metrics().ambiguous_episode_starts, 2);
+        // Recalibrating discards old alert state, not the accumulated counters.
+        g.accept_reacquisition(reference(Vec2::new(0.08, -0.04)))
+            .unwrap();
+        assert_eq!(g.observe_at(held, 0).alert, Alert::Quiet);
+        assert_eq!(g.metrics().ambiguous_episode_starts, 2);
+    }
+
+    #[test]
+    fn invalid_sample_clears_alert_and_fresh_plateau_creates_one_new_episode() {
+        let mut g = UnknownDriftObserver::new();
+        g.accept_reacquisition(reference(Vec2::ZERO)).unwrap();
+        let offset = Vec2::new(0.06, 0.04);
+        for i in 0..270_u64 {
+            g.observe_at(offset, i * 4);
+        }
+        assert_eq!(g.metrics().ambiguous_episode_starts, 1);
+        let bad = g.observe_at(Vec2::new(f64::INFINITY, 0.0), 1_080);
+        assert_eq!(bad.alert, Alert::InvalidInput);
+        assert_eq!(bad.output, Vec2::ZERO);
+        assert_eq!(g.metrics().ambiguous_episode_starts, 1);
+        for i in 271..550_u64 {
+            g.observe_at(offset, i * 4);
+        }
+        assert_eq!(g.metrics().ambiguous_episode_starts, 2);
+        assert_eq!(g.metrics().invalid_samples, 1);
+        assert_eq!(g.metrics().unverified_center_updates, 0);
     }
 
     #[test]
