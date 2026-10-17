@@ -17,10 +17,12 @@ jobs:
       - uses: actions/checkout@v4
       - name: Use pinned Rust 1.93.0 with Clippy
         run: |
-          rustup toolchain install 1.93.0 --profile minimal --component clippy
+          rustup toolchain install 1.93.0 --profile minimal --component clippy --component rustfmt
           rustup default 1.93.0
       - name: Check
         run: cargo check --locked --offline
+      - name: Rustfmt all targets
+        run: cargo fmt --all -- --check
       - name: Clippy strict all targets
         run: cargo clippy --locked --offline --all-targets -- -D warnings
       - name: Unit tests

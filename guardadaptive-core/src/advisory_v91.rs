@@ -71,10 +71,7 @@ impl AdvisoryGate {
         if self.clock_faulted {
             return Notice::ClockFault;
         }
-        if self
-            .last_seen_ms
-            .is_some_and(|prev| monotonic_ms <= prev)
-        {
+        if self.last_seen_ms.is_some_and(|prev| monotonic_ms <= prev) {
             self.clock_faulted = true;
             self.stats.clock_faults = self.stats.clock_faults.saturating_add(1);
             return Notice::ClockFault;
@@ -107,17 +104,21 @@ impl AdvisoryGate {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::unknown_drift_v89::{UnknownDriftObserver, Alert as ObserverAlert};
-    use crate::Vec2;
     use crate::guided::GuidedWizard;
     use crate::resolution::Resolution;
+    use crate::unknown_drift_v89::{Alert as ObserverAlert, UnknownDriftObserver};
+    use crate::Vec2;
 
     fn frame(alert: Alert, started: bool, center: Option<Vec2>) -> Observation {
         Observation {
             output: Vec2::new(0.08, -0.02),
             alert,
             ambiguity_started: started,
-            suspected_center: if started { Some(Vec2::new(0.08, -0.02)) } else { None },
+            suspected_center: if started {
+                Some(Vec2::new(0.08, -0.02))
+            } else {
+                None
+            },
             active_center: center,
         }
     }
@@ -126,15 +127,27 @@ mod tests {
         let mut wizard = GuidedWizard::new();
         wizard.confirm_release().unwrap();
         for i in 0_u32..128 {
-            let n = if i.is_multiple_of(2) { 0.00002 } else { -0.00002 };
-            wizard.sample(Resolution::XInput16.quantize(Vec2::new(n, -n))).unwrap();
+            let n = if i.is_multiple_of(2) {
+                0.00002
+            } else {
+                -0.00002
+            };
+            wizard
+                .sample(Resolution::XInput16.quantize(Vec2::new(n, -n)))
+                .unwrap();
         }
         wizard.sample(Vec2::new(0.18, 0.0)).unwrap();
         wizard.confirm_movement_finished().unwrap();
         wizard.confirm_release().unwrap();
         for i in 0_u32..128 {
-            let n = if i.is_multiple_of(2) { 0.00002 } else { -0.00002 };
-            wizard.sample(Resolution::XInput16.quantize(Vec2::new(n, -n))).unwrap();
+            let n = if i.is_multiple_of(2) {
+                0.00002
+            } else {
+                -0.00002
+            };
+            wizard
+                .sample(Resolution::XInput16.quantize(Vec2::new(n, -n)))
+                .unwrap();
         }
         core.accept_reacquisition(wizard.commit().unwrap()).unwrap();
     }
@@ -166,9 +179,21 @@ mod tests {
     #[test]
     fn no_center_and_conflicting_flags_do_not_create_false_notice() {
         let mut p = AdvisoryGate::new();
-        assert_eq!(p.review(&frame(Alert::MotionOrDriftAmbiguous, true, None), 100), Notice::None);
-        assert_eq!(p.review(&frame(Alert::Quiet, true, Some(Vec2::ZERO)), 101), Notice::None);
-        assert_eq!(p.review(&frame(Alert::MotionOrDriftAmbiguous, false, Some(Vec2::ZERO)), 102), Notice::None);
+        assert_eq!(
+            p.review(&frame(Alert::MotionOrDriftAmbiguous, true, None), 100),
+            Notice::None
+        );
+        assert_eq!(
+            p.review(&frame(Alert::Quiet, true, Some(Vec2::ZERO)), 101),
+            Notice::None
+        );
+        assert_eq!(
+            p.review(
+                &frame(Alert::MotionOrDriftAmbiguous, false, Some(Vec2::ZERO)),
+                102
+            ),
+            Notice::None
+        );
         assert_eq!(p.stats().displayed, 0);
     }
 
@@ -177,7 +202,10 @@ mod tests {
         let mut p = AdvisoryGate::new();
         let event = frame(Alert::MotionOrDriftAmbiguous, true, Some(Vec2::ZERO));
         assert_eq!(p.review(&event, 500), Notice::AmbiguousInput);
-        assert_eq!(p.review(&frame(Alert::InvalidInput, false, Some(Vec2::ZERO)), 500), Notice::InvalidSample);
+        assert_eq!(
+            p.review(&frame(Alert::InvalidInput, false, Some(Vec2::ZERO)), 500),
+            Notice::InvalidSample
+        );
         assert_eq!(p.review(&event, 5_000), Notice::Coalesced);
         assert_eq!(p.stats().invalid_samples, 1);
         assert_eq!(p.stats().coalesced, 1);
@@ -202,19 +230,54 @@ mod tests {
     #[test]
     fn observation_clock_fault_also_fails_closed() {
         let mut p = AdvisoryGate::new();
-        assert_eq!(p.review(&frame(Alert::InvalidTimestamp, false, Some(Vec2::ZERO)), 77), Notice::ClockFault);
-        assert_eq!(p.review(&frame(Alert::MotionOrDriftAmbiguous, true, Some(Vec2::ZERO)), 900), Notice::ClockFault);
+        assert_eq!(
+            p.review(&frame(Alert::InvalidTimestamp, false, Some(Vec2::ZERO)), 77),
+            Notice::ClockFault
+        );
+        assert_eq!(
+            p.review(
+                &frame(Alert::MotionOrDriftAmbiguous, true, Some(Vec2::ZERO)),
+                900
+            ),
+            Notice::ClockFault
+        );
         assert_eq!(p.stats().clock_faults, 1);
     }
 
     #[test]
     fn a_changed_reference_alone_does_not_bypass_cooldown() {
         let mut p = AdvisoryGate::new();
-        assert_eq!(p.review(&frame(Alert::MotionOrDriftAmbiguous, true, Some(Vec2::ZERO)), 1_000), Notice::AmbiguousInput);
-        assert_eq!(p.review(&frame(Alert::MotionOrDriftAmbiguous, true, Some(Vec2::new(0.02, 0.0))), 1_500), Notice::Coalesced);
+        assert_eq!(
+            p.review(
+                &frame(Alert::MotionOrDriftAmbiguous, true, Some(Vec2::ZERO)),
+                1_000
+            ),
+            Notice::AmbiguousInput
+        );
+        assert_eq!(
+            p.review(
+                &frame(
+                    Alert::MotionOrDriftAmbiguous,
+                    true,
+                    Some(Vec2::new(0.02, 0.0))
+                ),
+                1_500
+            ),
+            Notice::Coalesced
+        );
         // The caller can explicitly start a fresh authorized epoch.
         p.reset_session();
-        assert_eq!(p.review(&frame(Alert::MotionOrDriftAmbiguous, true, Some(Vec2::new(0.02, 0.0))), 0), Notice::AmbiguousInput);
+        assert_eq!(
+            p.review(
+                &frame(
+                    Alert::MotionOrDriftAmbiguous,
+                    true,
+                    Some(Vec2::new(0.02, 0.0))
+                ),
+                0
+            ),
+            Notice::AmbiguousInput
+        );
     }
 
     #[test]
