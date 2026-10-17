@@ -28,6 +28,9 @@ pub struct Observation {
     /// Raw passthrough until a reference exists; then direct center subtraction.
     pub output: Vec2,
     pub alert: Alert,
+    /// True only on the first report of a newly observed ambiguous plateau.
+    /// Does not authenticate drift or the user's intent.
+    pub ambiguity_started: bool,
     /// Unauthenticated hypothesis, NEVER applied to live output.
     pub suspected_center: Option<Vec2>,
     pub active_center: Option<Vec2>,
@@ -102,6 +105,10 @@ impl UnknownDriftObserver {
         if !next.finite() || next.x.abs() > 1.0 || next.y.abs() > 1.0 {
             return Err(CenterError::InvalidCenter);
         }
+        // An identical repeat is idempotent: keep the original undo point.
+        if self.center == Some(next) {
+            return Ok(());
+        }
         if self
             .center
             .is_some_and(|current| (next - current).norm() > MAX_REACQUISITION_CHANGE)
@@ -157,6 +164,7 @@ impl UnknownDriftObserver {
             return Observation {
                 output: Vec2::ZERO,
                 alert: Alert::InvalidInput,
+                ambiguity_started: false,
                 suspected_center: None,
                 active_center: self.center,
             };
@@ -184,6 +192,7 @@ impl UnknownDriftObserver {
                             _ => Vec2::ZERO,
                         },
                         alert: Alert::InvalidTimestamp,
+                        ambiguity_started: false,
                         suspected_center: None,
                         active_center: self.center,
                     };
@@ -225,7 +234,8 @@ impl UnknownDriftObserver {
         };
         let ambiguous =
             self.center.is_some() && stable_enough && measured_deviation >= ALERT_ABOVE_CENTER;
-        if ambiguous && !self.currently_ambiguous {
+        let ambiguity_started = ambiguous && !self.currently_ambiguous;
+        if ambiguity_started {
             self.metrics.ambiguous_episode_starts =
                 self.metrics.ambiguous_episode_starts.saturating_add(1);
         }
@@ -246,6 +256,7 @@ impl UnknownDriftObserver {
             } else {
                 Alert::Quiet
             },
+            ambiguity_started,
             suspected_center: if ambiguous { Some(raw) } else { None },
             active_center: self.center,
         }
@@ -711,6 +722,71 @@ mod tests {
         assert_eq!(g.metrics().ambiguous_episode_starts, 2);
         assert_eq!(g.metrics().invalid_samples, 1);
         assert_eq!(g.metrics().unverified_center_updates, 0);
+    }
+
+    #[test]
+    fn repeating_identical_center_does_not_destroy_undo_checkpoint() {
+        let mut g = UnknownDriftObserver::new();
+        let adopted = reference(Vec2::new(0.05, -0.02));
+        g.accept_reacquisition(adopted).unwrap();
+        let before = g.metrics();
+        let adopted_again = reference(Vec2::new(0.05, -0.02));
+        // Both synthetic transactions produce the exact same quantized median.
+        assert_eq!(g.center(), Some(adopted_again.center()));
+        g.accept_reacquisition(adopted_again).unwrap();
+        assert_eq!(g.metrics().reference_updates, before.reference_updates);
+        assert!(g.restore_previous_reference());
+        assert_eq!(g.center(), None);
+        assert_eq!(g.observe(Vec2::new(0.05, -0.02)).alert, Alert::Uncalibrated);
+        assert!(!g.restore_previous_reference());
+    }
+
+    #[test]
+    fn repeated_center_confirmation_preserves_prior_nonzero_reference_for_undo() {
+        let mut g = UnknownDriftObserver::new();
+        let first = reference(Vec2::new(-0.03, 0.01));
+        g.accept_reacquisition(first).unwrap();
+        let updated = reference(Vec2::new(0.07, 0.04));
+        g.accept_reacquisition(updated).unwrap();
+        g.accept_reacquisition(reference(Vec2::new(0.07, 0.04)))
+            .unwrap();
+        assert_eq!(g.metrics().reference_updates, 2);
+        assert!(g.restore_previous_reference());
+        let restored = g.center().unwrap();
+        assert!((restored - Vec2::new(-0.03, 0.01)).norm() < 0.0001);
+    }
+
+    #[test]
+    fn ambiguity_started_is_one_frame_event_per_plateau() {
+        let mut g = UnknownDriftObserver::new();
+        g.accept_reacquisition(reference(Vec2::ZERO)).unwrap();
+        let held = Vec2::new(0.08, 0.02);
+        let mut starts = 0;
+        for i in 0..2_000_u64 {
+            let o = g.observe_at(held, i * 4);
+            starts += usize::from(o.ambiguity_started);
+            if o.ambiguity_started {
+                assert_eq!(o.alert, Alert::MotionOrDriftAmbiguous);
+                assert_eq!(starts, 1);
+                assert_eq!(g.metrics().ambiguous_episode_starts, 1);
+            }
+            if i > 250 {
+                assert!(!o.ambiguity_started);
+            }
+        }
+        assert_eq!(starts, 1);
+        assert_eq!(g.metrics().ambiguous_episode_starts, 1);
+        // Moving outside the plateau then returning creates exactly one more event.
+        g.observe_at(Vec2::ZERO, 8_001);
+        let mut second = 0;
+        for i in 1..270_u64 {
+            let o = g.observe_at(held, 8_001 + i * 4);
+            second += usize::from(o.ambiguity_started);
+        }
+        assert_eq!(second, 1);
+        assert_eq!(g.metrics().ambiguous_episode_starts, 2);
+        let invalid = g.observe_at(Vec2::new(f64::NAN, 0.0), 9_200);
+        assert!(!invalid.ambiguity_started);
     }
 
     #[test]

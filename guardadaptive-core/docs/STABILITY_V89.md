@@ -16,3 +16,10 @@ CI parity correction: Windows GitHub Actions had selected Rust 1.99, while local
 - v0.89 regression coverage increased from 17 to 21 tests, including conflicting invalid axis/timestamp, timestamp near u64::MAX, long held plateaus and fresh episodes after invalid samples.
 - 377 core Rust tests + 4, 7 and 4 auxiliary tests, cargo fmt and strict clippy passed locally.
 - All work remains in the isolated research observer. There is no trusted physical reference, no driver/game output, and no automatic unknown-drift center update. Physical acceptance stays BLOCKED.
+
+2026-10-17 follow-up stabilization:
+- An identical VerifiedCenter acquisition is idempotent: does not replace an earlier undo checkpoint, increment reference_updates, or reset the detection epoch. Distinct center corrections retain the previous undo semantics.
+- Observation.ambiguity_started is a one-frame event for the start of each continuous ambiguous plateau; sustained ambiguity remains visible through Alert::MotionOrDriftAmbiguous while aggregate counters distinguish reports from episodes. An intentional held movement may still produce this observational warning; it is never a verified drift label.
+- Three regression tests verify repeated first and subsequent center confirmations, one-shot alert events and a new event after leaving and re-entering a plateau.
+- Local test gate: 380 core Rust tests plus 4+7+4 auxiliary tests, cargo fmt and strict Clippy with -D warnings passed.
+- The observer is still research-only, no game/driver integration, no automatic unknown-center learning. Physical <0.9% accuracy not established.
