@@ -57,3 +57,13 @@ The gradual-ramp case can enter its eventual stable plateau slightly before the 
 Obtain independent synchronized physical shaft-position reference or a controlled mechanical fixture across multiple real controllers. Record intentionally held positions, truly released neutral periods, drift shifts and clock jitter. Report false suspicion rate per held-motion trial, true suspicion delay, max neutral output residual against **independent position evidence**, micro-direction errors, and actual device-to-output latency. Freeze thresholds before blind holdout.
 
 A read-only observer is not a real drift corrector. It is safer to surface ambiguity than to silently consume someone's intended input.
+
+## Extended high-polling-rate regression (2026-10-17)
+The original 21-case synthetic matrix (16ms/8ms/4ms; 62.5/125/250 Hz) now also runs 2ms and 1ms intervals (500 and 1000 Hz). The generator produces 35 total cases under the same fixed 5.6-second synthetic timeline. Independent physical controller testing has **not** occurred.
+- `OBSERVER_REGRESSION_GATE=35/35`: correct protective observer behavior (not drift correction success).
+- Held intentional direction falsely suspected: `5/5` scenarios, while output is not erased.
+- Unknown drift is suspected: `10/10` synthetic cases.
+- Unknown drift achieves strict <0.9% correction: `0/10`; remaining error reaches ~10%.
+- No unverified center learning. No game output. No measured USB polling or end-to-end device latency.
+
+The 1ms synthetic sample interval alone does not prove that an actual joystick reports valid 1000 Hz, nor that the running system has low jitter. Real physical device availability, synchronized independent motion ground truth, and unmodified live captures remain required.

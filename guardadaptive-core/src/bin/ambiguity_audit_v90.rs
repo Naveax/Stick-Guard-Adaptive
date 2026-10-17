@@ -13,6 +13,8 @@ use guardadaptive::{
 
 const BIAS: Vec2 = Vec2::new(0.05, -0.04);
 const RUN_MS: u64 = 5_600;
+// 62.5, 125, 250, 500 and 1000 Hz synthetic polling intervals.
+const INTERVAL_MS: [u64; 5] = [16, 8, 4, 2, 1];
 const RAMP_MS: u64 = 4_000;
 const ABRUPT_DRIFT: Vec2 = Vec2::new(0.10, 0.0);
 const HELD_MOTION: Vec2 = Vec2::new(0.10, 0.0);
@@ -135,7 +137,7 @@ fn synthetic_reference(center: Vec2) -> guardadaptive::reacquire::VerifiedCenter
 }
 
 fn run_case(scenario: Scenario, interval_ms: u64) -> Audit {
-    assert!((4..=20).contains(&interval_ms));
+    assert!(INTERVAL_MS.contains(&interval_ms));
     let mut g = UnknownDriftObserver::new();
     g.accept_reacquisition(synthetic_reference(BIAS))
         .expect("valid synthetic reference");
@@ -204,7 +206,7 @@ fn audit_research_constraints(result: &Audit) -> bool {
 
 fn run_matrix() -> Vec<Audit> {
     let mut results = Vec::new();
-    for interval_ms in [16_u64, 8, 4] {
+    for interval_ms in INTERVAL_MS {
         for scenario in Scenario::ALL {
             results.push(run_case(scenario, interval_ms));
         }
@@ -288,9 +290,18 @@ fn main() {
         .iter()
         .filter(|r| synthetic_accuracy(r) == "FAIL")
         .count();
-    println!("HELD_INTENT_FALSE_DRIFT_SUSPICIONS={false_suspicions}/3");
-    println!("SYNTHETIC_DRIFT_ALERTS={synthetic_drift_alerts}/6");
-    println!("UNKNOWN_DRIFT_PRECISION_FAILURES={drift_accuracy_failures}/6 TARGET_LT_0_9_PERCENT");
+    println!(
+        "HELD_INTENT_FALSE_DRIFT_SUSPICIONS={false_suspicions}/{}",
+        INTERVAL_MS.len()
+    );
+    println!(
+        "SYNTHETIC_DRIFT_ALERTS={synthetic_drift_alerts}/{}",
+        2 * INTERVAL_MS.len()
+    );
+    println!(
+        "UNKNOWN_DRIFT_PRECISION_FAILURES={drift_accuracy_failures}/{} TARGET_LT_0_9_PERCENT",
+        2 * INTERVAL_MS.len()
+    );
     println!("IDENTIFIABILITY=HELD_INTENT_AND_ABRUPT_DRIFT_ARE_IDENTICAL_RAW_INPUT");
     println!("RUNTIME_GAME_OUTPUT=DISABLED PRODUCTION=BLOCKED");
     if passed != rows.len() {
@@ -304,12 +315,12 @@ mod tests {
     #[test]
     fn synthetic_matrix_has_no_hidden_center_learning_or_erased_micro() {
         let result = run_matrix();
-        assert_eq!(result.len(), 21);
+        assert_eq!(result.len(), Scenario::ALL.len() * INTERVAL_MS.len());
         assert!(result.iter().all(audit_research_constraints));
     }
     #[test]
     fn held_intent_and_sudden_unknown_drift_have_identical_observations() {
-        for hz_ms in [16_u64, 8, 4] {
+        for hz_ms in INTERVAL_MS {
             let held = run_case(Scenario::HeldDirection, hz_ms);
             let drift = run_case(Scenario::AbruptUnknownDrift, hz_ms);
             assert_eq!(held.ambiguity_episodes, drift.ambiguity_episodes);
@@ -323,7 +334,7 @@ mod tests {
     }
     #[test]
     fn static_micro_motion_survives_below_one_percent_without_deadzone() {
-        for hz_ms in [16_u64, 8, 4] {
+        for hz_ms in INTERVAL_MS {
             let x = run_case(Scenario::MicroHold, hz_ms);
             assert_eq!(x.micro_erased, 0);
             assert!(x.max_intent_error < 0.002);
@@ -332,7 +343,7 @@ mod tests {
     }
     #[test]
     fn slow_drift_does_not_get_recategorized_as_proven_neutral() {
-        for hz_ms in [16_u64, 8, 4] {
+        for hz_ms in INTERVAL_MS {
             let x = run_case(Scenario::SlowDriftThenPlateau, hz_ms);
             assert_eq!(x.unverified_updates, 0);
             assert!(x.max_intent_error > 0.09);
@@ -342,7 +353,7 @@ mod tests {
     }
     #[test]
     fn high_frequency_reversals_and_noise_do_not_falsely_trigger() {
-        for hz_ms in [16_u64, 8, 4] {
+        for hz_ms in INTERVAL_MS {
             for s in [Scenario::RapidReversal, Scenario::NeutralNoise] {
                 let x = run_case(s, hz_ms);
                 assert_eq!(x.ambiguity_episodes, 0);
