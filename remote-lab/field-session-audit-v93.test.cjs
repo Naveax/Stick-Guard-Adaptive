@@ -18,6 +18,15 @@ function fixture({custom=false,unstableRight=false,twoAxes=false}={}){
   }
   if(p===1){a[indices[0]]=i%2===0?0.004:0.05;}
   if(p===4&&!twoAxes){a[indices[2]]=i%2===0?0.004:0.045;}
+  // Only the named stick is swept; unrelated physical axes remain neutral.
+  if(p===2){
+   a[indices[0]]=i%2===0?0.70:-0.70;
+   a[indices[1]]=i%3===0?0.55:-0.55;
+  }
+  if(p===5&&!twoAxes){
+   a[indices[2]]=i%2===0?0.70:-0.70;
+   a[indices[3]]=i%3===0?0.55:-0.55;
+  }
   const f=filteredAxes(a,indices,twoAxes?2:4,.08);
   samples.push([p,p*13500+i*90,a,Array(buttonsCount).fill(0),f]);
  }
@@ -37,6 +46,10 @@ test('ten axis / twelve button mapped controller passes without leaking raw samp
  assert.equal(a.neutral[0].constant_plateau_unverified,true);
  assert.equal(a.neutral[1].constant_plateau_unverified,true);
  assert.equal(a.micro_comparator.length,2);
+ assert.equal(a.axis_activity.length,2);
+ assert.equal(a.axis_activity[0].observational_status,'PHASE_ISOLATION_OBSERVED');
+ assert.equal(a.axis_activity[1].observational_status,'PHASE_ISOLATION_OBSERVED');
+ assert.equal(a.axis_activity[1].physical_axis_direction_verified,false);
  assert.ok(a.micro_comparator[0].zeroed_by_fixed_deadzone>0);
  assert.equal(a.eligible_for_training,false);
  assert.equal(a.production_gate,'BLOCKED');
@@ -51,13 +64,70 @@ test('noisy secondary neutral is flagged, not silently accepted',()=>{
  assert.equal(a.neutral[1].stable_but_unverified,false);
  assert.equal(a.neutral[1].quality,'MOTION_OR_UNSTABLE_NEUTRAL');
  assert.equal(a.neutral[1].constant_plateau_unverified,false);
+ assert.equal(a.axis_activity[1].observational_status,'NEUTRAL_UNSTABLE');
 });
 test('two axis controller never invents right hand measurements',()=>{
  const a=auditRecord(fixture({twoAxes:true}));
  assert.equal(a.ok,true);
  assert.equal(a.neutral.length,1);
  assert.equal(a.micro_comparator.length,1);
+ assert.equal(a.axis_activity.length,1);
+ assert.equal(a.axis_activity[0].observational_status,'PHASE_ISOLATION_OBSERVED');
  assert.deepEqual(a.phase_counts,[120,120,120,120,120,120]);
+});
+function regenerateFiltered(record){
+ const count=record.controller.axes_count>=4?4:2;
+ for(const row of record.samples) row[4]=filteredAxes(row[2],record.controller.indices,count,.08);
+ record.analysis=summarizeTelemetry(record);
+}
+test('custom controller missing selected axis excursion is explicitly inconclusive',()=>{
+ const rec=fixture({custom:true});
+ for(const row of rec.samples) if(row[0]===5){
+  row[2][5]=0.0039;
+  row[2][2]=-0.0039;
+  row[2][6]=0.8; // unselected axis moves instead
+ }
+ regenerateFiltered(rec);
+ const result=auditRecord(rec);
+ assert.equal(result.ok,true);
+ assert.equal(result.axis_activity[1].observational_status,'SWEEP_NOT_DEMONSTRATED');
+ assert.equal(result.axis_activity[1].unselected_axes_active_during_sweep,1);
+ assert.equal(result.axis_activity[1].physical_axis_direction_verified,false);
+ assert.equal(result.eligible_for_training,false);
+});
+test('cross stick activity prevents claiming phase-isolation success',()=>{
+ const rec=fixture({custom:true});
+ for(const row of rec.samples) if(row[0]===2){row[2][5]=0.5;row[2][2]=0.5;}
+ regenerateFiltered(rec);
+ const result=auditRecord(rec);
+ assert.equal(result.ok,true);
+ assert.equal(result.axis_activity[1].observational_status,'CROSS_ACTIVITY_IN_OTHER_STICK_PHASE');
+ assert.equal(result.axis_activity[1].physical_axis_direction_verified,false);
+});
+test('a one-frame spike must not count as demonstrated analog sweep',()=>{
+ const rec=fixture({custom:true});
+ for(const row of rec.samples) if(row[0]===5){
+   row[2][5]=0.0039;
+   row[2][2]=-0.0039;
+ }
+ const one=rec.samples.find(row=>row[0]===5);
+ one[2][5]=0.9;one[2][2]=0.9;
+ regenerateFiltered(rec);
+ const result=auditRecord(rec);
+ assert.equal(result.ok,true);
+ assert.equal(result.axis_activity[1].observational_status,'SWEEP_NOT_DEMONSTRATED');
+ assert.deepEqual(result.axis_activity[1].sweep_active_frames_per_axis,[1,1]);
+ assert.equal(result.axis_activity[1].physical_axis_direction_verified,false);
+});
+test('unselected axis moving despite correct selected axes remains observational warning',()=>{
+ const rec=fixture({custom:true});
+ for(const row of rec.samples)if(row[0]===5)row[2][6]=0.85;
+ regenerateFiltered(rec);
+ const result=auditRecord(rec);
+ assert.equal(result.ok,true);
+ assert.equal(result.axis_activity[1].observational_status,'OTHER_UNMAPPED_AXIS_ACTIVE');
+ assert.equal(result.axis_activity[1].unselected_axes_active_during_sweep,1);
+ assert.equal(result.eligible_for_training,false);
 });
 test('modified output, indices, consent and training claims fail closed',()=>{
  const invalid=[

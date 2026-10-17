@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   node-tests:
-    name: Node.js tests (28)
+    name: Node.js tests (32)
     runs-on: ubuntu-latest
     defaults:
       run:
