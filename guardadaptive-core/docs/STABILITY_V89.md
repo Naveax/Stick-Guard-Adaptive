@@ -7,3 +7,5 @@ Fixed: switching timed and untimed observations now resets detection evidence. C
 Validation: 17 v0.89 tests, 373 core Rust tests plus integration suites. Tested 441 signed synthetic static offsets and a deterministic 30,000-report stress stream. Clippy all targets with warnings denied, cargo fmt and cargo test passed.
 
 Boundaries: A held intentional stick position can be indistinguishable from real drift. No unknown-center auto-learning, driver writes, hardware verification, or physical below-0.9-percent guarantee. Release remains BLOCKED.
+
+CI parity correction: Windows GitHub Actions had selected Rust 1.99, while local verification used Rust 1.93.0. The workflow now installs/pins 1.93.0 with Clippy. An additional equivalent filename-suffix simplification in profile_inventory.rs resolves the newer Clippy warning without changing parsing behavior.

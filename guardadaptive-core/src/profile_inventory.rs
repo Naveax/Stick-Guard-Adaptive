@@ -57,10 +57,9 @@ impl Inventory {
 pub(crate) fn filename(name: &str) -> Option<(String, Stick)> {
     let (raw, stick) = if let Some(alias) = name.strip_suffix("-left.profile") {
         (alias, Stick::Left)
-    } else if let Some(alias) = name.strip_suffix("-right.profile") {
-        (alias, Stick::Right)
     } else {
-        return None;
+        let alias = name.strip_suffix("-right.profile")?;
+        (alias, Stick::Right)
     };
     if raw.len() > 384 {
         return None;
