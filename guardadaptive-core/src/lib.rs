@@ -1,6 +1,7 @@
 //! GuardAdaptive. The hot path has no allocation and no access to simulation ground truth.
 //! Units are normalized stick range [-1, 1]. One step = one input sample.
 pub mod acceptance;
+pub mod advisory_v91;
 pub mod adversarial;
 pub mod authorization_bounds_v63;
 pub mod backend_counter_v61;
