@@ -45,7 +45,7 @@ fn review_idle(data: &[Sample], right: bool) -> bool {
     ys.sort_by(f64::total_cmp);
     let mid = xs.len() / 2;
     let median = |a: &[f64]| {
-        if a.len() % 2 == 0 {
+        if a.len().is_multiple_of(2) {
             (a[mid - 1] + a[mid]) * 0.5
         } else {
             a[mid]

@@ -57,7 +57,7 @@ fn center_of(data: &[Vec2]) -> Result<(Vec2, f64), Rejection> {
     ys.sort_by(f64::total_cmp);
     let median = |v: &[f64]| {
         let mid = v.len() / 2;
-        if v.len() % 2 == 0 {
+        if v.len().is_multiple_of(2) {
             (v[mid - 1] + v[mid]) * 0.5
         } else {
             v[mid]

@@ -59,6 +59,7 @@ pub struct UnknownDriftObserver {
     plateau_frames: u32,
     plateau_start_ms: Option<u64>,
     last_timestamp_ms: Option<u64>,
+    last_mode_timed: Option<bool>,
     metrics: UnknownDriftMetrics,
 }
 
@@ -82,6 +83,13 @@ impl UnknownDriftObserver {
         self.plateau_start_ms = None;
     }
 
+    /// A new acquisition, undo or device epoch must not inherit a stale clock.
+    fn reset_observation(&mut self) {
+        self.clear_plateau();
+        self.last_timestamp_ms = None;
+        self.last_mode_timed = None;
+    }
+
     /// A reference must originate from an explicit two-release transaction.
     /// The token alone does NOT independently prove the stick was released.
     /// The shift bound prevents an unexpectedly large, silent remap.
@@ -100,7 +108,7 @@ impl UnknownDriftObserver {
         self.rollback_available = true;
         self.center = Some(next);
         self.metrics.reference_updates = self.metrics.reference_updates.saturating_add(1);
-        self.clear_plateau();
+        self.reset_observation();
         Ok(())
     }
 
@@ -112,7 +120,7 @@ impl UnknownDriftObserver {
         self.center = self.rollback_center.take();
         self.rollback_available = false;
         self.metrics.restored_old_reference = self.metrics.restored_old_reference.saturating_add(1);
-        self.clear_plateau();
+        self.reset_observation();
         true
     }
 
@@ -121,8 +129,7 @@ impl UnknownDriftObserver {
         self.center = None;
         self.rollback_center = None;
         self.rollback_available = false;
-        self.clear_plateau();
-        self.last_timestamp_ms = None;
+        self.reset_observation();
     }
 
     /// Constant-work, allocation-free observation. Never adjusts the active center.
@@ -139,10 +146,20 @@ impl UnknownDriftObserver {
     }
 
     fn observe_internal(&mut self, raw: Vec2, now: Option<u64>) -> Observation {
+        let timed = now.is_some();
+        if self
+            .last_mode_timed
+            .is_some_and(|was_timed| was_timed != timed)
+        {
+            self.reset_observation();
+        }
+        self.last_mode_timed = Some(timed);
         if let Some(ms) = now {
             if let Some(prev) = self.last_timestamp_ms {
                 if ms <= prev {
                     self.clear_plateau();
+                    // Start a fresh observation epoch only after rejecting this frame.
+                    self.last_timestamp_ms = Some(ms);
                     self.metrics.timestamp_anomalies =
                         self.metrics.timestamp_anomalies.saturating_add(1);
                     return Observation {
@@ -163,7 +180,6 @@ impl UnknownDriftObserver {
             self.last_timestamp_ms = Some(ms);
         } else {
             self.last_timestamp_ms = None;
-            self.plateau_start_ms = None;
         }
         if !raw.finite() || raw.x.abs() > 1.0 || raw.y.abs() > 1.0 {
             self.clear_plateau();
@@ -203,7 +219,8 @@ impl UnknownDriftObserver {
             }
             None => self.plateau_frames >= STABLE_FRAMES_FOR_ALERT,
         };
-        let ambiguous = stable_enough && measured_deviation >= ALERT_ABOVE_CENTER;
+        let ambiguous =
+            self.center.is_some() && stable_enough && measured_deviation >= ALERT_ABOVE_CENTER;
         if ambiguous {
             self.metrics.ambiguous_stable_reports =
                 self.metrics.ambiguous_stable_reports.saturating_add(1);
@@ -482,6 +499,126 @@ mod tests {
         assert_eq!(g.center(), None);
         assert!(!g.restore_previous_reference());
         assert_eq!(g.metrics().restored_old_reference, 1);
+    }
+
+    #[test]
+    fn uncalibrated_plateau_is_not_mistaken_for_known_drift() {
+        let mut g = UnknownDriftObserver::new();
+        let held_or_bad_center = Vec2::new(0.10, -0.10);
+        for i in 0..1_000_u64 {
+            let o = g.observe_at(held_or_bad_center, i * 4);
+            assert_eq!(o.alert, Alert::Uncalibrated);
+            assert_eq!(o.output, held_or_bad_center);
+            assert_eq!(o.suspected_center, None);
+            assert_eq!(g.center(), None);
+        }
+        assert_eq!(g.metrics().unverified_center_updates, 0);
+    }
+
+    #[test]
+    fn switching_timed_and_untimed_modes_starts_a_fresh_detection_window() {
+        let mut g = UnknownDriftObserver::new();
+        g.accept_reacquisition(reference(Vec2::ZERO)).unwrap();
+        let held = Vec2::new(0.075, 0.005);
+        for i in 0..40_u64 {
+            assert_ne!(
+                g.observe_at(held, i * 10).alert,
+                Alert::MotionOrDriftAmbiguous
+            );
+        }
+        for _ in 0..180 {
+            g.observe(held);
+        }
+        assert_eq!(g.observe(held).alert, Alert::MotionOrDriftAmbiguous);
+        // Re-enter timed mode: previous 181 untimed samples are not evidence
+        // of a 800 ms timed plateau.
+        for i in 0..80_u64 {
+            assert_ne!(
+                g.observe_at(held, i * 10).alert,
+                Alert::MotionOrDriftAmbiguous
+            );
+        }
+        assert_eq!(g.observe_at(held, 800).alert, Alert::MotionOrDriftAmbiguous);
+        assert_eq!(g.metrics().unverified_center_updates, 0);
+    }
+
+    #[test]
+    fn time_rollback_starts_new_epoch_without_early_alarm() {
+        let mut g = UnknownDriftObserver::new();
+        g.accept_reacquisition(reference(Vec2::ZERO)).unwrap();
+        let steady = Vec2::new(0.03, 0.0);
+        for t in (0..=1_000_u64).step_by(10) {
+            g.observe_at(steady, t);
+        }
+        assert_eq!(g.observe_at(steady, 5).alert, Alert::InvalidTimestamp);
+        for t in (15..=805_u64).step_by(10) {
+            let o = g.observe_at(steady, t);
+            if t < 805 {
+                assert_ne!(o.alert, Alert::MotionOrDriftAmbiguous);
+            }
+        }
+        assert_eq!(
+            g.observe_at(steady, 815).alert,
+            Alert::MotionOrDriftAmbiguous
+        );
+        assert_eq!(g.metrics().timestamp_anomalies, 1);
+    }
+
+    #[test]
+    fn recalibration_and_undo_reset_clock_and_avoid_old_plateau_reuse() {
+        let mut g = UnknownDriftObserver::new();
+        g.accept_reacquisition(reference(Vec2::ZERO)).unwrap();
+        let held = Vec2::new(0.06, 0.0);
+        for i in 0..150_u64 {
+            g.observe_at(held, 90_000 + i * 10);
+        }
+        assert_eq!(
+            g.observe_at(held, 91_500).alert,
+            Alert::MotionOrDriftAmbiguous
+        );
+        g.accept_reacquisition(reference(Vec2::new(0.04, 0.0)))
+            .unwrap();
+        // A new session's clock starting at 0 is a legitimate new epoch.
+        let first = g.observe_at(held, 0);
+        assert_eq!(first.alert, Alert::Quiet);
+        assert!((first.output - Vec2::new(0.02, 0.0)).norm() < 0.0001);
+        for i in 1..80_u64 {
+            assert_eq!(g.observe_at(held, i * 10).alert, Alert::Quiet);
+        }
+        g.restore_previous_reference();
+        assert_eq!(g.observe_at(held, 0).alert, Alert::Quiet);
+        assert!(g.metrics().unverified_center_updates == 0);
+    }
+
+    #[test]
+    fn deterministic_long_randomized_stream_has_no_hidden_center_learning() {
+        let original = Vec2::new(-0.045, 0.032);
+        let mut g = UnknownDriftObserver::new();
+        g.accept_reacquisition(reference(original)).unwrap();
+        let recorded = g.center().unwrap();
+        let mut seed = 0x1234_5678_ABCD_EF01_u64;
+        let mut time = 0_u64;
+        for i in 0..30_000_u64 {
+            seed = seed
+                .wrapping_mul(6364136223846793005)
+                .wrapping_add(1442695040888963407);
+            let x = ((seed >> 16) as u32 as f64 / u32::MAX as f64) * 1.8 - 0.9;
+            seed = seed
+                .wrapping_mul(6364136223846793005)
+                .wrapping_add(1442695040888963407);
+            let y = ((seed >> 16) as u32 as f64 / u32::MAX as f64) * 1.8 - 0.9;
+            let input = Vec2::new(x, y);
+            time += if i % 1000 == 0 { 260 } else { 4 };
+            let o = g.observe_at(input, time);
+            let expected = (input - recorded).saturate();
+            assert!((o.output - expected).norm() < 1e-12, "sample {i}");
+            assert!(o.output.finite());
+            assert_eq!(o.active_center, Some(recorded));
+        }
+        assert_eq!(g.center(), Some(recorded));
+        assert_eq!(g.metrics().unverified_center_updates, 0);
+        assert_eq!(g.metrics().reference_updates, 1);
+        assert_eq!(g.metrics().timestamp_anomalies, 0);
     }
 
     #[test]

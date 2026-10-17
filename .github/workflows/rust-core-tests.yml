@@ -19,5 +19,7 @@ jobs:
         run: rustup default stable
       - name: Check
         run: cargo check --locked --offline
+      - name: Clippy strict all targets
+        run: cargo clippy --locked --offline --all-targets -- -D warnings
       - name: Unit tests
         run: cargo test --locked --offline

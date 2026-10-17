@@ -306,7 +306,7 @@ mod tests {
         for (phase, label) in PHASES.iter().enumerate() {
             for i in 0..MIN_PER_PHASE {
                 let ms = phase * 1000 + i * 20;
-                let desired = if phase >= 1 && phase <= 3 {
+                let desired = if (1..=3).contains(&phase) {
                     "0.003,0.001"
                 } else {
                     "0,0"
