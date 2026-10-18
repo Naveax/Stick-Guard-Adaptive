@@ -36,6 +36,13 @@ test('HTTP consent / HTTPS Origin / administrator / erasure / no path traversal'
  }
  assert.equal((await fetch(url+'/')).status,200);
  assert.equal((await fetch(url+'/app.js')).status,200);
+ const guide=await fetch(url+'/axis-direction-v94.js');
+ assert.equal(guide.status,200);
+ assert.match(guide.headers.get('content-type'),/javascript/);
+ assert.match(await guide.text(),/physicallyVerified:false/);
+ const page=await (await fetch(url+'/')).text();
+ assert.match(page,/id="dirStart"/);
+ assert.match(page,/src="\/axis-direction-v94.js"/);
  assert.equal((await fetch(url+'/admin')).status,200);
  for(const alias of ['/test','/lab','/station']){
    const r=await fetch(url+alias,{redirect:'manual'});

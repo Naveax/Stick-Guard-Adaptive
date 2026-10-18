@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   node-tests:
-    name: Node.js tests (32)
+    name: Node.js tests (38)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -28,9 +28,10 @@ jobs:
           node --check telemetry.cjs
           node --check paired-study.cjs
           node --check field-session-audit-v93.cjs
+          node --check public/axis-direction-v94.js
           node --check public/app.js
           node --check public/idle-quality.js
           node --check public/neutral-preview.js
           node --check public/neutral-evidence-v87.js
       - name: Run tests without external services
-        run: node --test test.cjs paired-study.test.cjs telemetry.test.cjs idle-quality.test.cjs neutral-preview.test.cjs neutral-evidence-v87.test.cjs field-session-audit-v93.test.cjs
+        run: node --test test.cjs paired-study.test.cjs telemetry.test.cjs idle-quality.test.cjs neutral-preview.test.cjs neutral-evidence-v87.test.cjs field-session-audit-v93.test.cjs axis-direction-v94.test.cjs

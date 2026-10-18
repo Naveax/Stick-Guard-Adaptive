@@ -11,6 +11,7 @@
   <script src="/neutral-preview.js" defer></script>
   <script src="/neutral-evidence-v87.js" defer></script>
   <script src="/app.js" defer></script>
+  <script src="/axis-direction-v94.js" defer></script>
 </head>
 <body>
 <header class="topbar">
@@ -48,6 +49,15 @@
         <label>Sağ X<select id="axisRX"></select></label><label>Sağ Y<select id="axisRY"></select></label>
       </div>
       <p id="mappingStatus" class="subtext"></p>
+      <div class="preview-panel" role="group" aria-label="Elle analog yön testi">
+        <strong>Analog yön doğrulama rehberi (isteğe bağlı)</strong>
+        <p>İki analogu bırak; ardından ekrandaki yönlere tek tek iterek kontrol et. Tarayıcı ham eksenlerini okur, kalibrasyonu veya oyun girdisini değiştirmez. Dış sensör olmadığı için fiziksel kanıt değildir.</p>
+        <div class="measure-buttons">
+          <button id="dirStart" type="button" class="secondary">Yön testi başlat</button>
+          <button id="dirCancel" type="button" class="secondary hidden">İptal et</button>
+        </div>
+        <p id="dirStatus" role="status" aria-live="polite">Yön testi başlatılmadı. Veri kaydedilmez veya yüklenmez.</p>
+      </div>
     </details>
     <div class="metrics" aria-label="Ölçülen drift yüzdesi">
       <article class="metric before"><div class="metric-label"><span class="legend raw"></span> FİLTRESİZ (HAM)</div><strong id="rawTotal" class="big-number">--</strong><span id="rawCaption">Boşta drift ölçümü bekleniyor</span></article>

@@ -17,6 +17,8 @@
   fullDevice:null,fullAxesCount:0,fullButtonsCount:0,fullDeadzone:8,
   data:null,surveyMode:'pending',uploaded:false,restSample:null,restSeparate:null
  };
+ const directionBusy=()=>window.GuardAdaptiveDirectionGuide?.busy()===true;
+ window.GuardAdaptiveTestBusy=()=>!!(state.full||state.quick||state.preview||state.neutral);
  const clamp=n=>Math.min(1,Math.max(-1,n));
  const round=n=>Math.round(n*10000)/10000;
  const percentage=(x,y)=>(Math.min(1,Math.hypot(x,y))*100).toFixed(2)+'%';
@@ -200,7 +202,7 @@
  }
  function previewBegin(){
   if(state.preview)return;
-  if(state.full||state.quick||state.neutral){
+  if(state.full||state.quick||state.neutral||directionBusy()){
    showText('previewMessage','Önce devam eden ölçümü veya kalibrasyonu tamamla ya da durdur.');
    return;
   }
@@ -249,7 +251,7 @@
    showText('calibMessage','İkinci nötr ölçüm başladı. İki analogu da 5 saniye tamamen bırak.');
    return;
   }
-  if(state.full||state.quick||state.preview){
+  if(state.full||state.quick||state.preview||directionBusy()){
    showText('calibMessage','Başka bir test devam ediyor. Önce onu tamamla.');
    return;
   }
@@ -356,7 +358,7 @@
   setTimeout(()=>URL.revokeObjectURL(url),1200);
  }
  function measure(){
-  if(state.quick||state.full||state.preview||state.neutral)return;
+  if(state.quick||state.full||state.preview||state.neutral||directionBusy())return;
   const v=currentValues();
   if(!v||document.hidden){showText('measureMessage','Önce analogları algılanan bir kol bağla.');return;}
   state.quick={time:performance.now(),last:-1,id:v.g.id,index:v.g.index};
@@ -381,7 +383,7 @@
   AXIS_IDS.forEach((id,i)=>$(id).disabled=capacity(chosen())===2&&i>=2);
  }
  async function startFull(){
-  if(state.full||state.quick||state.preview||state.neutral)return;
+  if(state.full||state.quick||state.preview||state.neutral||directionBusy())return;
   const v=currentValues();
   if(!v){showText('phaseMessage','Önce kontrolcünü bağla ve eksenleri kontrol et.');return;}
   if(!$('testAck').checked){showText('phaseMessage','Önce veri kaydı bilgilendirmesini onayla.');return;}
@@ -547,7 +549,7 @@
   }
  }
  function choose(kind){
-  if(state.full||state.quick||state.preview||state.neutral)return;
+  if(state.full||state.quick||state.preview||state.neutral||directionBusy())return;
   state.neutralCandidate=null;state.neutralEvidence=null;$('calibDownloadBtn').disabled=true;
   state.kind=kind;state.surveyMode='pending';
   state.data=null;state.uploaded=false;$('deadzone').disabled=false;clearRest();
@@ -557,7 +559,7 @@
   refresh();window.scrollTo({top:0,behavior:'instant'});
  }
  function back(){
-  if(state.full||state.quick||state.preview||state.neutral)return;
+  if(state.full||state.quick||state.preview||state.neutral||directionBusy())return;
   state.neutralCandidate=null;state.neutralEvidence=null;$('calibDownloadBtn').disabled=true;
   $('home').classList.remove('hidden');$('test').classList.add('hidden');
   state.kind=null;state.data=null;state.fullSamples=[];state.surveyMode='pending';
@@ -565,7 +567,7 @@
  }
  document.querySelectorAll('[data-kind]').forEach(b=>b.addEventListener('click',()=>choose(b.dataset.kind)));
  $('back').addEventListener('click',back);
- $('device').addEventListener('change',e=>{if(state.full||state.quick||state.neutral)return;state.neutralCandidate=null;state.neutralEvidence=null;$('calibDownloadBtn').disabled=true;state.selected=e.target.value;mapping(chosen());clearRest();refresh();});
+ $('device').addEventListener('change',e=>{if(state.full||state.quick||state.neutral||directionBusy())return;state.neutralCandidate=null;state.neutralEvidence=null;$('calibDownloadBtn').disabled=true;state.selected=e.target.value;mapping(chosen());clearRest();refresh();});
  AXIS_IDS.forEach((id,i)=>$(id).addEventListener('change',()=>{
   if(state.full||state.quick||state.neutral)return;
   state.neutralCandidate=null;state.neutralEvidence=null;$('calibDownloadBtn').disabled=true;
